@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-indigo: #7b80e8;
+  --color-brand-pink: #f6dada;
+  --color-brand-title: #5a6fd8;
+  --color-brand-navy: #1f2a66;
+  --color-brand-input: #9c9c9c;
+  --color-brand-green: #5cb85c;
+  --color-brand-panel: #1f3a93;
+}

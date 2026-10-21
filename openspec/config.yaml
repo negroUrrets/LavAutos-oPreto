@@ -1,0 +1,76 @@
+schema: spec-driven
+
+context: |
+  Aplicación web para la gestión de un lavadero de vehículos.
+
+  Alcance de la primera etapa:
+  - Login y logout.
+  - Autenticación mediante una cuenta de administrador predeterminada.
+  - Gestión de clientes.
+  - Gestión de vehículos.
+  - Gestión de lavados.
+
+  La aplicación debe iniciar en la pantalla de login cuando no exista una sesión válida. La existencia de una cuenta administradora no implica que el usuario ya esté autenticado. La gestión de usuarios y la auditoría funcional de operaciones quedan fuera del alcance actual y requieren un cambio futuro aprobado.
+
+  Reglas de dominio:
+  - Cada lavado tiene asignado un vehículo.
+  - Cada vehículo tiene asignado un cliente.
+  - El cliente de un lavado se obtiene mediante la relación Lavado -> Vehículo -> Cliente.
+  - No crear una relación directa Lavado -> Cliente sin una especificación aprobada que modifique expresamente el modelo.
+
+  Stack tecnológico:
+  - Frontend: React, JavaScript, CSS y Tailwind CSS.
+  - Backend: Node.js, Express, JavaScript y Sequelize.
+  - Base de datos: Microsoft SQL Server.
+  - API REST con prefijo /api, HTTP/HTTPS y JSON.
+  - Autenticación basada en sesión de servidor y cookie HttpOnly.
+
+  Organización de alto nivel:
+  - src/frontend/
+  - src/backend/
+  - src/database/
+  - src/documentacion/
+
+  La documentación de src/documentacion/ contiene prototipos, diagramas de flujo de datos, diagramas de secuencia, modelo de datos y esquema de base de datos. Debe tratarse como la referencia del diseño actual. Consultarla antes de implementar y no modificar el diseño silenciosamente.
+
+  OpenCode debe preparar scripts SQL o migraciones de Sequelize a partir del esquema documentado cuando corresponda. SQL Server debe estar instalado y accesible para ejecutar y verificar esos cambios; no se debe asumir que la base existe o está disponible.
+
+rules:
+  proposal:
+    - Describir el objetivo y el problema que resuelve el cambio.
+    - Delimitar explícitamente el alcance y los elementos fuera de alcance.
+    - Identificar pantallas, flujos, entidades, relaciones, endpoints y componentes afectados cuando corresponda.
+    - Consultar la documentación existente antes de proponer cambios al diseño.
+    - Señalar las dependencias, riesgos y decisiones pendientes relevantes.
+    - No agregar gestión de usuarios ni auditoría funcional salvo que el cambio las incorpore explícitamente al alcance mediante aprobación.
+
+  specs:
+    - Escribir requisitos claros, verificables y orientados al comportamiento observable.
+    - Expresar las reglas de negocio de forma explícita y evitar ambigüedades.
+    - Separar requisitos funcionales de detalles de implementación.
+    - Mantener la coherencia con los prototipos, diagramas, modelo de datos y esquema documentados.
+    - Preservar la relación Lavado -> Vehículo -> Cliente; no inventar una relación directa Lavado -> Cliente.
+    - Incluir criterios de aceptación y escenarios de error relevantes.
+    - Los requisitos de autenticación deben indicar que el acceso comienza en Login y que no existe una sesión autenticada automáticamente.
+    - No incorporar funcionalidades futuras sin aprobación explícita.
+
+  design:
+    - Respetar el stack establecido React y JavaScript; Node.js, Express, JavaScript y Sequelize; Microsoft SQL Server.
+    - Mantener la separación de responsabilidades entre frontend, API, rutas, controllers, services, models y persistencia cuando corresponda.
+    - Favorecer bajo acoplamiento y alta cohesión sin introducir capas o abstracciones innecesarias.
+    - Describir los cambios al modelo de dominio, al esquema de base de datos, a las relaciones o a los endpoints y justificar por qué son necesarios.
+    - No contradecir la documentación existente. Si el cambio requiere modificarla, señalarlo expresamente y hacerlo como parte del cambio aprobado.
+    - Para autenticación, considerar sesión de servidor, cookie HttpOnly, cierre de sesión y protección de rutas.
+    - Para cambios de base de datos, contemplar scripts o migraciones versionados, revisión previa y verificación en un entorno accesible.
+    - No proponer sincronización destructiva automática ni eliminación de datos como mecanismo normal de actualización.
+
+  tasks:
+    - Dividir el trabajo en tareas pequeñas, ordenadas y verificables.
+    - Identificar los archivos, componentes, endpoints, modelos y migraciones que se prevé modificar cuando sea posible.
+    - Incluir en cada tarea de implementación las pruebas pertinentes al cambio.
+    - Incluir tareas de configuración de herramientas o entorno cuando sean necesarias para ejecutar las pruebas.
+    - Considerar pruebas unitarias, de integración, de frontend y de autenticación según el impacto; no exigir tipos de prueba irrelevantes para una tarea.
+    - Incluir verificaciones disponibles de lint y build cuando correspondan.
+    - No declarar una tarea terminada sin comunicar las pruebas y verificaciones ejecutadas y sus resultados.
+    - Si una prueba no puede ejecutarse por falta de SQL Server, dependencias o configuración, registrar la limitación y no afirmar que pasó.
+    - Mantener el trabajo alineado con los requisitos aprobados y no ampliar el alcance durante la implementación.
