@@ -148,7 +148,7 @@ export default function EditarVehiculoPage() {
     if (action === 'reset') {
       setForm(original);
     } else if (action === 'info') {
-      navigate(`/clientes/${id}/info`);
+      navigate(`/clientes/${id}/info`);    
     }
   }
 
@@ -259,7 +259,7 @@ export default function EditarVehiculoPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/clientes/${id}/info`)}
+              onClick={() => navigate(`/clientes/${id}/info`)}  
               className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
             >
               Cancelar

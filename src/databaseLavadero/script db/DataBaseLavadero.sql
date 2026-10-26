@@ -160,6 +160,9 @@ BEGIN
         CONSTRAINT PK_CategoriaLavado PRIMARY KEY (codigoCategoriaLavado)
     );
 END
+
+
+
 GO
 
 IF OBJECT_ID(N'dbo.Lavado', N'U') IS NULL
@@ -170,7 +173,7 @@ BEGIN
         fechaHoraLavado DATETIME2   NOT NULL,
         estadoLavado    VARCHAR(50) NOT NULL,
         vehi            BIGINT      NOT NULL,
-        categoriaLavado BIGINT      NOT NULL,
+        categoriaLavado BIGINT      NOT NULL,     
         login           BIGINT      NOT NULL,
         CONSTRAINT PK_Lavado PRIMARY KEY (codigoLavado),
         CONSTRAINT FK_Lavado_Vehiculo FOREIGN KEY (vehi)
@@ -179,6 +182,11 @@ BEGIN
             REFERENCES dbo.CategoriaLavado (codigoCategoriaLavado),
         CONSTRAINT FK_Lavado_Login FOREIGN KEY (login)
             REFERENCES dbo.Login (codigoLogin)
+       
     );
 END
+
 GO
+
+
+
