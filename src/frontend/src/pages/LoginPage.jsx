@@ -6,7 +6,7 @@ import Popup from '../components/Popup.jsx';
 import { login } from '../services/authService.js';
 
 const SUCCESS_MESSAGE = '!Bienvenid@!';
-const ERROR_MESSAGE = 'Error al iniciar sesion!!!';
+const ERROR_MESSAGE = 'Usuario / Contraseña incorrecta';
 
 export default function LoginPage() {
   const [usuario, setUsuario] = useState('');

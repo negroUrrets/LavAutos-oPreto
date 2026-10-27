@@ -6,6 +6,8 @@ const MarcaVehiculo = require('./MarcaVehiculo');
 const ModeloVehiculo = require('./ModeloVehiculo');
 const Vehiculo = require('./Vehiculo');
 const CategoriaLavado = require('./CategoriaLavado');
+const EstadoLavado = require('./EstadoLavado');
+const Utileria = require('./Utileria');
 const Lavado = require('./Lavado');
 const Usuario = require('./Usuario');
 const Login = require('./Login');
@@ -34,6 +36,12 @@ Lavado.belongsTo(Vehiculo, { foreignKey: 'vehi', as: 'vehiculo' });
 CategoriaLavado.hasMany(Lavado, { foreignKey: 'categoriaLavado', as: 'lavados' });
 Lavado.belongsTo(CategoriaLavado, { foreignKey: 'categoriaLavado', as: 'categoria' });
 
+EstadoLavado.hasMany(Lavado, { foreignKey: 'estado', as: 'lavados' });
+Lavado.belongsTo(EstadoLavado, { foreignKey: 'estado', as: 'datosEstado' });
+
+Utileria.hasMany(Lavado, { foreignKey: 'utileria', as: 'lavados' });
+Lavado.belongsTo(Utileria, { foreignKey: 'utileria', as: 'datosUtileria' });
+
 // Usuario y Login
 Usuario.hasMany(Login, { foreignKey: 'usuario', as: 'logins' });
 Login.belongsTo(Usuario, { foreignKey: 'usuario', as: 'datosUsuario' });
@@ -50,6 +58,8 @@ module.exports = {
   ModeloVehiculo,
   Vehiculo,
   CategoriaLavado,
+  EstadoLavado,
+  Utileria,
   Lavado,
   Usuario,
   Login,

@@ -170,7 +170,33 @@ describe('CRUD de vehículos y catálogos', () => {
 
     await Lavado.create({
       fechaHoraLavado: new Date(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(204);
+
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(false);
+  });
+
+  test('DELETE /api/vehiculos/:id con lavados en otro estado aplica baja lógica (204)', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `N${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      fechaHoraLavado: new Date(),
+      estado: ids.estadoLavadoAltId,
+      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,

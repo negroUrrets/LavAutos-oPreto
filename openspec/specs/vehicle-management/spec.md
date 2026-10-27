@@ -29,16 +29,21 @@ de la API REST, con cada vehículo asociado a un cliente.
 
 ### Requirement: Listar vehículos
 
-`GET /api/vehiculos` SHALL devolver la lista de vehículos registrados con `200`.
+`GET /api/vehiculos` SHALL devolver solo los vehículos con `estadoVehi = 1`, con `200`.
 
 #### Scenario: Listado con resultados
 
-- **WHEN** existen vehículos registrados
-- **THEN** la respuesta es `200` con la lista de vehículos
+- **WHEN** existen vehículos con `estadoVehi = 1`
+- **THEN** la respuesta es `200` con la lista de vehículos activos
+
+#### Scenario: Vehículos inactivos excluidos
+
+- **WHEN** existen vehículos con `estadoVehi = 0`
+- **THEN** no aparecen en la lista
 
 #### Scenario: Listado vacío
 
-- **WHEN** no existen vehículos registrados
+- **WHEN** no existen vehículos con `estadoVehi = 1`
 - **THEN** la respuesta es `200` con una lista vacía
 
 ### Requirement: Obtener vehículo
@@ -73,13 +78,14 @@ si existe y `404` si no.
 
 ### Requirement: Eliminar vehículo
 
-`DELETE /api/vehiculos/:id` SHALL eliminar un vehículo existente con `204` y
-responder `404` si no existe.
+`DELETE /api/vehiculos/:id` SHALL eliminar un vehículo existente con `204` y responder
+`404` si no existe. Si el vehículo tiene lavados asociados, SHALL aplicar baja lógica
+(`estadoVehi = 0`) en lugar de eliminarlo.
 
 #### Scenario: Eliminación exitosa
 
-- **WHEN** se elimina un vehículo existente
-- **THEN** la respuesta es `204` sin contenido
+- **WHEN** se elimina un vehículo existente sin lavados asociados
+- **THEN** la respuesta es `204` sin contenido y el vehículo se elimina permanentemente
 
 #### Scenario: Vehículo inexistente
 
@@ -89,7 +95,7 @@ responder `404` si no existe.
 #### Scenario: Vehículo con lavados asociados
 
 - **WHEN** se intenta eliminar un vehículo que tiene lavados asociados
-- **THEN** la respuesta es `409` indicando que no puede eliminarse por tener dependencias
+- **THEN** la respuesta es `204` y el vehículo queda con `estadoVehi = 0` (baja lógica) sin eliminarse
 
 ### Requirement: CRUD de categoría de vehículo
 
@@ -150,3 +156,29 @@ El backend SHALL exponer operaciones CRUD para `ModeloVehiculo` en
 
 - **WHEN** se intenta eliminar un modelo de vehículo que tiene vehículos asociados
 - **THEN** la respuesta es `409` indicando que no puede eliminarse por tener dependencias
+
+### Requirement: Vehículos con su marca y categoría
+
+`GET /api/vehiculos` SHALL incluir, junto con cada vehículo, su modelo, la marca del
+modelo y la categoría de la marca, de modo que la respuesta permita conocer la
+categoría, la marca, el modelo y la patente de cada vehículo.
+
+#### Scenario: Listado con marca y categoría
+
+- **WHEN** se solicita `GET /api/vehiculos`
+- **THEN** cada vehículo incluye su modelo, la marca del modelo y la categoría de la marca
+
+### Requirement: Filtro de vehículos por cliente
+
+`GET /api/vehiculos` SHALL aceptar un filtro opcional por cliente y, cuando se envía,
+devolver solo los vehículos de ese cliente.
+
+#### Scenario: Vehículos de un cliente
+
+- **WHEN** se solicita `GET /api/vehiculos` filtrando por un cliente
+- **THEN** la respuesta incluye solo los vehículos de ese cliente
+
+#### Scenario: Sin filtro
+
+- **WHEN** se solicita `GET /api/vehiculos` sin filtro
+- **THEN** la respuesta incluye todos los vehículos activos registrados

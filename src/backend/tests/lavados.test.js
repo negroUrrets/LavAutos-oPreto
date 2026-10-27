@@ -47,7 +47,8 @@ describe('CRUD de lavados y categoría de lavado', () => {
   test('POST /api/lavados crea un lavado (201) sin cliente directo', async () => {
     const res = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -62,8 +63,35 @@ describe('CRUD de lavados y categoría de lavado', () => {
   test('POST /api/lavados con vehículo inexistente responde 400', async () => {
     const res = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
       vehi: 999999999,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/lavados con estado inexistente responde 400', async () => {
+    const res = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: 999999999,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/lavados con utilería inexistente responde 400', async () => {
+    const res = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: 999999999,
+      vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
     });
@@ -78,20 +106,23 @@ describe('CRUD de lavados y categoría de lavado', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
-  test('GET /api/lavados?estadoLavado=activo filtra por estado (200)', async () => {
+  test('GET /api/lavados?estado=<codigo> filtra por estado (200)', async () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
     });
     createdLavados.push(create.body.data.codigoLavado);
 
-    const res = await agent.get('/api/lavados?estadoLavado=activo');
+    const res = await agent.get(`/api/lavados?estado=${ids.estadoLavadoId}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.every((lavado) => lavado.estadoLavado === 'activo')).toBe(true);
+    expect(
+      res.body.data.every((lavado) => String(lavado.estado) === String(ids.estadoLavadoId)),
+    ).toBe(true);
   });
 
   test('GET /api/lavados/:id inexistente responde 404', async () => {
@@ -103,7 +134,8 @@ describe('CRUD de lavados y categoría de lavado', () => {
   test('PUT /api/lavados/:id actualiza el estado (200)', async () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -111,16 +143,19 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const id = create.body.data.codigoLavado;
     createdLavados.push(id);
 
-    const res = await agent.put(`/api/lavados/${id}`).send({ estadoLavado: 'finalizado' });
+    const res = await agent
+      .put(`/api/lavados/${id}`)
+      .send({ estado: ids.estadoLavadoAltId });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.estadoLavado).toBe('finalizado');
+    expect(String(res.body.data.estado)).toBe(String(ids.estadoLavadoAltId));
   });
 
   test('DELETE /api/lavados/:id no está permitido (405) y el lavado permanece', async () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -152,7 +187,8 @@ describe('CRUD de lavados y categoría de lavado', () => {
 
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: categoriaId,
       login: ids.loginId,
@@ -162,5 +198,74 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const res = await agent.delete(`/api/categorias-lavado/${categoriaId}`);
 
     expect(res.status).toBe(409);
+  });
+});
+
+describe('marcas de tiempo del lavado', () => {
+  function crearLavado(extra = {}) {
+    return agent.post('/api/lavados').send({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+      ...extra,
+    });
+  }
+
+  test('el backend genera fechaHoraLavado y fechaHoraLavadoTerminado', async () => {
+    const res = await crearLavado();
+    createdLavados.push(res.body.data.codigoLavado);
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.fechaHoraLavado).toBeDefined();
+    expect(res.body.data.fechaHoraLavadoTerminado).toBeDefined();
+    expect(res.body.data.fechaHoraLavadoTerminado).toBe(res.body.data.fechaHoraLavado);
+  });
+
+  test('ignora las marcas enviadas por el cliente', async () => {
+    const res = await crearLavado({
+      fechaHoraLavado: '2000-01-01T00:00:00.000Z',
+      fechaHoraLavadoTerminado: '2000-01-01T00:00:00.000Z',
+    });
+    createdLavados.push(res.body.data.codigoLavado);
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.fechaHoraLavado).not.toBe('2000-01-01T00:00:00.000Z');
+    expect(res.body.data.fechaHoraLavadoTerminado).not.toBe('2000-01-01T00:00:00.000Z');
+  });
+
+  test('cambiar el estado actualiza fechaHoraLavadoTerminado y conserva fechaHoraLavado', async () => {
+    const create = await crearLavado();
+    const id = create.body.data.codigoLavado;
+    createdLavados.push(id);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const res = await agent.put(`/api/lavados/${id}`).send({ estado: ids.estadoLavadoAltId });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.fechaHoraLavado).toBe(create.body.data.fechaHoraLavado);
+    expect(new Date(res.body.data.fechaHoraLavadoTerminado).getTime()).toBeGreaterThan(
+      new Date(create.body.data.fechaHoraLavadoTerminado).getTime(),
+    );
+  });
+
+  test('actualizar sin cambiar el estado conserva fechaHoraLavadoTerminado', async () => {
+    const create = await crearLavado();
+    const id = create.body.data.codigoLavado;
+    createdLavados.push(id);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const res = await agent
+      .put(`/api/lavados/${id}`)
+      .send({ detallesLavado: 'sin cambio de estado' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.fechaHoraLavado).toBe(create.body.data.fechaHoraLavado);
+    expect(res.body.data.fechaHoraLavadoTerminado).toBe(
+      create.body.data.fechaHoraLavadoTerminado,
+    );
   });
 });

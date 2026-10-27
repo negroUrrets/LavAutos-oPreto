@@ -165,24 +165,54 @@ END
 
 GO
 
+IF OBJECT_ID(N'dbo.EstadoLavado', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.EstadoLavado
+    (
+        codigoEstado      BIGINT       IDENTITY(1,1) NOT NULL,
+        descripcionEstado VARCHAR(200) NOT NULL,
+        estadoLavado      BIT          NOT NULL,
+        CONSTRAINT PK_EstadoLavado PRIMARY KEY (codigoEstado)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.Utileria', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Utileria
+    (
+        codigoUtileria      BIGINT       IDENTITY(1,1) NOT NULL,
+        descripcionUtileria VARCHAR(200) NOT NULL,
+        estadoUtileria      BIT          NOT NULL,
+        CONSTRAINT PK_Utileria PRIMARY KEY (codigoUtileria)
+    );
+END
+GO
+
 IF OBJECT_ID(N'dbo.Lavado', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Lavado
     (
-        codigoLavado    BIGINT      IDENTITY(1,1) NOT NULL,
-        fechaHoraLavado DATETIME2   NOT NULL,
-        estadoLavado    VARCHAR(50) NOT NULL,
-        vehi            BIGINT      NOT NULL,
-        categoriaLavado BIGINT      NOT NULL,     
-        login           BIGINT      NOT NULL,
+        codigoLavado    BIGINT       IDENTITY(1,1) NOT NULL,
+        fechaHoraLavado DATETIME2    NOT NULL,
+        vehi            BIGINT       NOT NULL,
+        categoriaLavado BIGINT       NOT NULL,
+        login           BIGINT       NOT NULL,
+        estado          BIGINT       NOT NULL,
+        utileria        BIGINT       NOT NULL,
+        detallesLavado  VARCHAR(255) NULL,
+        fechaHoraLavadoTerminado DATETIME2    NOT NULL,
         CONSTRAINT PK_Lavado PRIMARY KEY (codigoLavado),
         CONSTRAINT FK_Lavado_Vehiculo FOREIGN KEY (vehi)
             REFERENCES dbo.Vehiculo (codigoVehi),
         CONSTRAINT FK_Lavado_CategoriaLavado FOREIGN KEY (categoriaLavado)
             REFERENCES dbo.CategoriaLavado (codigoCategoriaLavado),
         CONSTRAINT FK_Lavado_Login FOREIGN KEY (login)
-            REFERENCES dbo.Login (codigoLogin)
-       
+            REFERENCES dbo.Login (codigoLogin),
+        CONSTRAINT FK_Lavado_EstadoLavado FOREIGN KEY (estado)
+            REFERENCES dbo.EstadoLavado (codigoEstado),
+        CONSTRAINT FK_Lavado_Utileria FOREIGN KEY (utileria)
+            REFERENCES dbo.Utileria (codigoUtileria)
     );
 END
 

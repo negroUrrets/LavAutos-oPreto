@@ -24,16 +24,22 @@ un cliente es una persona.
 
 ### Requirement: Listar clientes
 
-`GET /api/clientes` SHALL devolver la lista de clientes registrados con `200`.
+`GET /api/clientes` SHALL devolver solo los clientes con `estadoCliente = 1`, tanto en
+el listado como en la búsqueda, con `200`.
 
 #### Scenario: Listado con resultados
 
-- **WHEN** existen clientes registrados
-- **THEN** la respuesta es `200` con la lista de clientes
+- **WHEN** existen clientes con `estadoCliente = 1`
+- **THEN** la respuesta es `200` con la lista de clientes activos
+
+#### Scenario: Clientes inactivos excluidos
+
+- **WHEN** existen clientes con `estadoCliente = 0`
+- **THEN** no aparecen en el listado ni en la búsqueda
 
 #### Scenario: Listado vacío
 
-- **WHEN** no existen clientes registrados
+- **WHEN** no existen clientes con `estadoCliente = 1`
 - **THEN** la respuesta es `200` con una lista vacía
 
 ### Requirement: Obtener cliente
@@ -68,8 +74,11 @@ cliente, con `200` si existe y `404` si no.
 
 ### Requirement: Eliminar cliente
 
-`DELETE /api/clientes/:id` SHALL eliminar un cliente existente junto con sus
-vehículos asociados, con `204`, y responder `404` si no existe.
+`DELETE /api/clientes/:id` SHALL procesar la baja de un cliente existente: si el cliente
+tiene algún lavado asociado, SHALL aplicar una baja lógica (`estadoCliente = 0` y
+`estadoVehi = 0` de todos sus vehículos) sin eliminarlo; si no tiene lavados, SHALL
+eliminarlo permanentemente junto con sus vehículos. En ambos casos responde `204`, y
+`404` si el cliente no existe.
 
 #### Scenario: Eliminación exitosa con vehículos
 
@@ -84,4 +93,26 @@ vehículos asociados, con `204`, y responder `404` si no existe.
 #### Scenario: Cliente con vehículos con lavados
 
 - **WHEN** se intenta eliminar un cliente cuyos vehículos tienen lavados asociados
-- **THEN** la respuesta es `409` indicando que no puede eliminarse porque los lavados no se eliminan
+- **THEN** no se elimina permanentemente: se marca `estadoCliente = 0` y `estadoVehi = 0` de todos sus vehículos, y la respuesta es `204`
+
+### Requirement: Búsqueda de clientes
+
+`GET /api/clientes` SHALL aceptar un parámetro de búsqueda opcional y, cuando se envía,
+devolver los clientes activos cuyo `nombre`, `apellido` o `dni` contienen el texto
+indicado, sin distinguir mayúsculas; sin el parámetro, devuelve todos los clientes
+activos.
+
+#### Scenario: Búsqueda con coincidencias
+
+- **WHEN** se envía una búsqueda que coincide con el nombre, el apellido o el dni de uno o más clientes
+- **THEN** la respuesta es `200` con los clientes que coinciden
+
+#### Scenario: Búsqueda sin coincidencias
+
+- **WHEN** se envía una búsqueda que no coincide con ningún cliente
+- **THEN** la respuesta es `200` con una lista vacía
+
+#### Scenario: Sin parámetro de búsqueda
+
+- **WHEN** se solicita `GET /api/clientes` sin parámetro de búsqueda
+- **THEN** la respuesta es `200` con todos los clientes activos

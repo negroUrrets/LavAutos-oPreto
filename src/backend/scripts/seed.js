@@ -1,21 +1,14 @@
-const { sequelize, Usuario } = require('../models');
-const { hashPassword } = require('../utils/password');
-
-const ADMIN_USER = 'admin';
-const ADMIN_PASSWORD = '123456';
+const { sequelize } = require('../models');
+const { ensureDefaultAdmin } = require('../services/adminService');
 
 async function seed() {
   await sequelize.authenticate();
 
-  const existing = await Usuario.findOne({ where: { nombreUsuario: ADMIN_USER } });
-  if (existing) {
-    console.log('La cuenta administrador ya existe; no se modifica.');
-  } else {
-    await Usuario.create({
-      nombreUsuario: ADMIN_USER,
-      'contraseña': hashPassword(ADMIN_PASSWORD),
-    });
+  const { created } = await ensureDefaultAdmin();
+  if (created) {
     console.log('Cuenta administrador creada.');
+  } else {
+    console.log('La cuenta administrador ya existe; no se modifica.');
   }
 
   await sequelize.close();

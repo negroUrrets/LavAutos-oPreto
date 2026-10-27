@@ -170,7 +170,48 @@ describe('CRUD de clientes', () => {
     });
     await Lavado.create({
       fechaHoraLavado: new Date(),
-      estadoLavado: 'activo',
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(204);
+
+    const clienteDb = await Cliente.findByPk(clienteId);
+    const vehiculoDb = await Vehiculo.findByPk(vehiculo.codigoVehi);
+    expect(clienteDb).not.toBeNull();
+    expect(Boolean(clienteDb.estadoCliente)).toBe(false);
+    expect(vehiculoDb).not.toBeNull();
+    expect(Boolean(vehiculoDb.estadoVehi)).toBe(false);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con lavados en otro estado aplica baja lógica (204)', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'ConLavadoAlt', apellido: 'Test', dni: 88888888 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'ZZ777ZZ',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      fechaHoraLavado: new Date(),
+      estado: ids.estadoLavadoAltId,
+      utileria: ids.utileriaId,
       vehi: vehiculo.codigoVehi,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,

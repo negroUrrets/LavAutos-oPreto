@@ -9,13 +9,14 @@ preservando la relación `Lavado -> Vehiculo -> Cliente`.
 
 ### Requirement: Crear lavado
 
-`POST /api/lavados` SHALL crear un lavado con `fechaHoraLavado`, `vehi`,
-`categoriaLavado`, `estadoLavado` y `login`, y responder `201` con el lavado
-creado.
+`POST /api/lavados` SHALL crear un lavado con `vehi`, `categoriaLavado`, `estado` (código
+de `EstadoLavado`), `utileria` (código de `Utileria`) y `login`, con `detallesLavado`
+opcional, y responder `201` con el lavado creado. El backend SHALL establecer
+`fechaHoraLavado` y `fechaHoraLavadoTerminado` con la hora local, sin tomarlas del cuerpo.
 
 #### Scenario: Creación exitosa
 
-- **WHEN** se envía una solicitud válida con vehículo, categoría y login existentes
+- **WHEN** se envía una solicitud válida con vehículo, categoría, login, estado y utilería existentes
 - **THEN** se crea el lavado y la respuesta es `201` con los datos creados
 
 #### Scenario: Vehículo inexistente
@@ -28,10 +29,25 @@ creado.
 - **WHEN** se envía un lavado con una `categoriaLavado` inexistente
 - **THEN** la respuesta es `400` indicando que la categoría no existe
 
+#### Scenario: Estado inexistente
+
+- **WHEN** se envía un lavado con un `estado` inexistente
+- **THEN** la respuesta es `400` indicando que el estado no existe
+
+#### Scenario: Utilería inexistente
+
+- **WHEN** se envía un lavado con una `utileria` inexistente
+- **THEN** la respuesta es `400` indicando que la utilería no existe
+
+#### Scenario: Marcas generadas por el backend
+
+- **WHEN** se crea un lavado
+- **THEN** `fechaHoraLavado` y `fechaHoraLavadoTerminado` quedan con la hora local del servidor y no se toman de la solicitud
+
 ### Requirement: Listar lavados
 
-`GET /api/lavados` SHALL devolver la lista de lavados con `200` y permitir filtrar
-por estado mediante el parámetro de consulta `estadoLavado`.
+`GET /api/lavados` SHALL devolver la lista de lavados con `200` y permitir filtrar por
+estado mediante el parámetro de consulta `estado`, que indica el código de `EstadoLavado`.
 
 #### Scenario: Listado con resultados
 
@@ -40,8 +56,8 @@ por estado mediante el parámetro de consulta `estadoLavado`.
 
 #### Scenario: Filtrar lavados activos
 
-- **WHEN** se consulta el listado con el filtro de estado activo
-- **THEN** la respuesta incluye únicamente los lavados cuyo estado coincide con el filtro
+- **WHEN** se consulta el listado con `estado` igual al código del estado activo
+- **THEN** la respuesta incluye únicamente los lavados cuyo `estado` coincide con ese código
 
 ### Requirement: Obtener lavado
 
@@ -60,8 +76,10 @@ existe y `404` si no.
 
 ### Requirement: Actualizar lavado
 
-`PUT /api/lavados/:id` SHALL actualizar los datos del lavado, incluido
-`estadoLavado`, con `200` si existe y `404` si no.
+`PUT /api/lavados/:id` SHALL actualizar `vehi`, `categoriaLavado`, `estado`, `utileria` y
+`detallesLavado`, con `200` si existe y `404` si no. Si el `estado` cambia, SHALL
+actualizar `fechaHoraLavadoTerminado` con la hora local. `fechaHoraLavado` NO SHALL
+modificarse y ninguna de las dos marcas SHALL aceptarse del cuerpo.
 
 #### Scenario: Actualización exitosa
 
@@ -72,6 +90,21 @@ existe y `404` si no.
 
 - **WHEN** se intenta actualizar un lavado inexistente
 - **THEN** la respuesta es `404`
+
+#### Scenario: Estado inexistente al actualizar
+
+- **WHEN** se intenta actualizar un lavado con un `estado` inexistente
+- **THEN** la respuesta es `400` indicando que el estado no existe
+
+#### Scenario: Cambio de estado actualiza la marca
+
+- **WHEN** se actualiza un lavado con un `estado` distinto del actual
+- **THEN** `fechaHoraLavadoTerminado` se actualiza con la hora local y `fechaHoraLavado` no cambia
+
+#### Scenario: Sin cambio de estado
+
+- **WHEN** se actualiza un lavado sin cambiar el `estado`
+- **THEN** `fechaHoraLavadoTerminado` conserva su valor anterior
 
 ### Requirement: Eliminar lavado no permitido
 
@@ -112,3 +145,30 @@ El backend SHALL exponer operaciones CRUD para `CategoriaLavado` en
 
 - **WHEN** se intenta eliminar una categoría de lavado que tiene lavados asociados
 - **THEN** la respuesta es `409` indicando que no puede eliminarse por tener dependencias
+
+### Requirement: Baja con lavados asociados
+
+Un vehículo o un cliente con uno o más lavados asociados, sin importar el `estado` de esos
+lavados, NO SHALL eliminarse físicamente. La baja SHALL aplicarse como baja lógica:
+`Vehiculo.estadoVehi = 0`, y en el caso de un cliente, además `Cliente.estadoCliente = 0`
+y `estadoVehi = 0` de todos sus vehículos. Los lavados NO SHALL eliminarse.
+
+#### Scenario: Vehículo con lavados
+
+- **WHEN** se solicita la baja de un vehículo que tiene uno o más lavados asociados
+- **THEN** la respuesta es `204`, el vehículo permanece almacenado con `estadoVehi = 0` y sus lavados no se eliminan
+
+#### Scenario: Cliente cuyos vehículos tienen lavados
+
+- **WHEN** se solicita la baja de un cliente y alguno de sus vehículos tiene uno o más lavados asociados
+- **THEN** la respuesta es `204`, el cliente queda con `estadoCliente = 0`, todos sus vehículos quedan con `estadoVehi = 0` y ningún registro se elimina
+
+#### Scenario: Lavado en estado distinto al activo
+
+- **WHEN** el único lavado del vehículo tiene un `estado` distinto del activo
+- **THEN** la baja se aplica como baja lógica igual que si el lavado estuviera activo
+
+#### Scenario: Sin lavados
+
+- **WHEN** se solicita la baja de un vehículo o de un cliente sin lavados asociados
+- **THEN** el registro se elimina permanentemente y la respuesta es `204`

@@ -5,6 +5,8 @@ const {
   MarcaVehiculo,
   ModeloVehiculo,
   CategoriaLavado,
+  EstadoLavado,
+  Utileria,
   Usuario,
   Login,
 } = require('../../models');
@@ -26,6 +28,18 @@ async function createBaseFixtures() {
     marcaVehi: marca.codigoMarcaVehi,
   });
   const categoriaLavado = await CategoriaLavado.create({ descripcionLavado: `Lavado ${tag}` });
+  const estadoLavado = await EstadoLavado.create({
+    descripcionEstado: `Activo ${tag}`,
+    estadoLavado: true,
+  });
+  const estadoLavadoAlt = await EstadoLavado.create({
+    descripcionEstado: `Finalizado ${tag}`,
+    estadoLavado: true,
+  });
+  const utileria = await Utileria.create({
+    descripcionUtileria: `Utileria ${tag}`,
+    estadoUtileria: true,
+  });
 
   const persona = await Persona.create({
     nombre: 'Ana',
@@ -45,6 +59,9 @@ async function createBaseFixtures() {
     marcaVehiculoId: marca.codigoMarcaVehi,
     modeloVehiculoId: modelo.codigoModeloVehi,
     categoriaLavadoId: categoriaLavado.codigoCategoriaLavado,
+    estadoLavadoId: estadoLavado.codigoEstado,
+    estadoLavadoAltId: estadoLavadoAlt.codigoEstado,
+    utileriaId: utileria.codigoUtileria,
     clienteId: persona.codigoPersona,
     usuarioId: usuario.codigoUsuario,
     loginId: login.codigoLogin,
@@ -61,6 +78,9 @@ async function removeBaseFixtures(ids) {
   await CategoriaLavado.destroy({
     where: { codigoCategoriaLavado: ids.categoriaLavadoId },
   });
+  await Utileria.destroy({ where: { codigoUtileria: ids.utileriaId } });
+  await EstadoLavado.destroy({ where: { codigoEstado: ids.estadoLavadoId } });
+  await EstadoLavado.destroy({ where: { codigoEstado: ids.estadoLavadoAltId } });
   await ModeloVehiculo.destroy({ where: { codigoModeloVehi: ids.modeloVehiculoId } });
   await MarcaVehiculo.destroy({ where: { codigoMarcaVehi: ids.marcaVehiculoId } });
   await CategoriaVehiculo.destroy({

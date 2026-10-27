@@ -2,6 +2,8 @@ const {
   Persona,
   Cliente,
   CategoriaLavado,
+  EstadoLavado,
+  Utileria,
   ModeloVehiculo,
   Vehiculo,
   Lavado,
@@ -20,27 +22,23 @@ const include = [
     ],
   },
   { model: CategoriaLavado, as: 'categoria' },
+  { model: EstadoLavado, as: 'datosEstado' },
+  { model: Utileria, as: 'datosUtileria' },
 ];
 
 const lavadoService = createCrudService({
   model: Lavado,
   name: 'Lavado',
-  fields: ['fechaHoraLavado', 'estadoLavado', 'vehi', 'categoriaLavado', 'login'],
+  fields: ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria', 'detallesLavado'],
   include,
   buildListOptions: (query) => {
-    if (query.estadoLavado) {
-      return { where: { estadoLavado: query.estadoLavado } };
+    if (query.estado) {
+      return { where: { estado: query.estado } };
     }
     return {};
   },
   validateCreate: async (payload) => {
-    requireFields(payload, [
-      'fechaHoraLavado',
-      'estadoLavado',
-      'vehi',
-      'categoriaLavado',
-      'login',
-    ]);
+    requireFields(payload, ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria']);
     await assertExists(Vehiculo, payload.vehi, 'El vehiculo no existe.');
     await assertExists(
       CategoriaLavado,
@@ -48,6 +46,8 @@ const lavadoService = createCrudService({
       'La categoria de lavado no existe.',
     );
     await assertExists(Login, payload.login, 'El login no existe.');
+    await assertExists(EstadoLavado, payload.estado, 'El estado no existe.');
+    await assertExists(Utileria, payload.utileria, 'La utileria no existe.');
   },
   validateUpdate: async (payload) => {
     if (payload.vehi !== undefined) {
@@ -62,6 +62,12 @@ const lavadoService = createCrudService({
     }
     if (payload.login !== undefined) {
       await assertExists(Login, payload.login, 'El login no existe.');
+    }
+    if (payload.estado !== undefined) {
+      await assertExists(EstadoLavado, payload.estado, 'El estado no existe.');
+    }
+    if (payload.utileria !== undefined) {
+      await assertExists(Utileria, payload.utileria, 'La utileria no existe.');
     }
   },
 });
