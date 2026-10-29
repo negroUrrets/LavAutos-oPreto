@@ -17,6 +17,19 @@ export async function fetchSession() {
   return response.ok;
 }
 
+export async function fetchSessionData() {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const body = await response.json();
+  return body.data ?? null;
+}
+
 export async function logout() {
   await fetch('/api/auth/logout', {
     method: 'POST',

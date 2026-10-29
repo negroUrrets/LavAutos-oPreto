@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import ClienteInfoPage from './ClienteInfoPage.jsx';
 
 let sessionOk = true;
+let lavadosVehiculo = [];
 
 const cliente = {
   codigoPersona: 5,
@@ -52,6 +53,9 @@ function mockFetch(url, options = {}) {
   if (url === '/api/vehiculos?cliente=5') {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: vehiculos }) });
   }
+  if (url === '/api/lavados?vehi=9') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: lavadosVehiculo }) });
+  }
   return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
 }
 
@@ -66,6 +70,10 @@ function renderPage() {
           path="/clientes/:id/vehiculos/:vehiculoId/editar"
           element={<div>EDITAR VEHICULO PAGE</div>}
         />
+        <Route
+          path="/clientes/:id/vehiculos/:vehiculoId/lavar"
+          element={<div>NUEVO LAVADO PAGE</div>}
+        />
         <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
         <Route path="/login" element={<div>LOGIN PAGE</div>} />
       </Routes>
@@ -76,6 +84,7 @@ function renderPage() {
 beforeEach(() => {
   sessionOk = true;
   vehiculos = baseVehiculos();
+  lavadosVehiculo = [];
   globalThis.fetch = vi.fn(mockFetch);
 });
 
@@ -173,6 +182,35 @@ describe('ClienteInfoPage', () => {
     await user.click(within(clienteCard).getByRole('button', { name: '+ VEHICULO' }));
 
     expect(await screen.findByText('NUEVO VEHICULO PAGE')).toBeInTheDocument();
+  });
+
+  test('LAVAR navega a Nuevo Lavado si el vehículo no tiene lavado en curso', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'LAVAR' }));
+
+    expect(await screen.findByText('NUEVO LAVADO PAGE')).toBeInTheDocument();
+  });
+
+  test('LAVAR avisa si el vehículo ya tiene un lavado en curso', async () => {
+    lavadosVehiculo = [{ codigoLavado: 1, datosEstado: { descripcionEstado: 'Lavando' } }];
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'LAVAR' }));
+
+    expect(
+      await screen.findByText('El vehiculo ya tiene un lavado en curso.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('NUEVO LAVADO PAGE')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+    expect(
+      screen.queryByText('El vehiculo ya tiene un lavado en curso.'),
+    ).not.toBeInTheDocument();
   });
 
   test('el botón Editar de la card de vehículo navega a la edición', async () => {

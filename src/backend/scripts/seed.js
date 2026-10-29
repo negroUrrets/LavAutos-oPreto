@@ -1,5 +1,6 @@
 const { sequelize } = require('../models');
 const { ensureDefaultAdmin } = require('../services/adminService');
+const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
 
 async function seed() {
   await sequelize.authenticate();
@@ -10,6 +11,9 @@ async function seed() {
   } else {
     console.log('La cuenta administrador ya existe; no se modifica.');
   }
+
+  const catalogosCreados = await ensureLavadoCatalogs();
+  console.log(`Catalogos de lavado creados: ${catalogosCreados}.`);
 
   await sequelize.close();
 }

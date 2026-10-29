@@ -94,6 +94,6 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('Contraseña'), 'mal');
     await user.click(screen.getByRole('button', { name: 'Iniciar Sesion' }));
 
-    expect(await screen.findByText('Error al iniciar sesion!!!')).toBeInTheDocument();
+    expect(await screen.findByText('Usuario / Contraseña incorrecta')).toBeInTheDocument();
   });
 });

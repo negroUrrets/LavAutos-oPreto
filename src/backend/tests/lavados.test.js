@@ -125,6 +125,22 @@ describe('CRUD de lavados y categoría de lavado', () => {
     ).toBe(true);
   });
 
+  test('GET /api/lavados?vehi=<codigo> filtra por vehículo (200)', async () => {
+    const create = await agent.post('/api/lavados').send({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(create.body.data.codigoLavado);
+
+    const res = await agent.get(`/api/lavados?vehi=${vehiculoId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.every((lavado) => String(lavado.vehi) === String(vehiculoId))).toBe(true);
+  });
+
   test('GET /api/lavados/:id inexistente responde 404', async () => {
     const res = await agent.get('/api/lavados/999999999');
 

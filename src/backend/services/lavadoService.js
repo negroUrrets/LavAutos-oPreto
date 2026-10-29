@@ -32,10 +32,14 @@ const lavadoService = createCrudService({
   fields: ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria', 'detallesLavado'],
   include,
   buildListOptions: (query) => {
+    const where = {};
     if (query.estado) {
-      return { where: { estado: query.estado } };
+      where.estado = query.estado;
     }
-    return {};
+    if (query.vehi) {
+      where.vehi = query.vehi;
+    }
+    return { where };
   },
   validateCreate: async (payload) => {
     requireFields(payload, ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria']);

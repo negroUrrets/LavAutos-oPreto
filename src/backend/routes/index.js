@@ -8,6 +8,8 @@ const marcasVehiculo = require('./marcasVehiculo');
 const modelosVehiculo = require('./modelosVehiculo');
 const lavados = require('./lavados');
 const categoriasLavado = require('./categoriasLavado');
+const utilerias = require('./utilerias');
+const estadosLavado = require('./estadosLavado');
 
 const router = Router();
 
@@ -20,5 +22,7 @@ router.use('/marcas-vehiculo', requireAuth, marcasVehiculo);
 router.use('/modelos-vehiculo', requireAuth, modelosVehiculo);
 router.use('/lavados', requireAuth, lavados);
 router.use('/categorias-lavado', requireAuth, categoriasLavado);
+router.use('/utilerias', requireAuth, utilerias);
+router.use('/estados-lavado', requireAuth, estadosLavado);
 
 module.exports = router;

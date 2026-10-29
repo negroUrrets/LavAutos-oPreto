@@ -22,6 +22,7 @@ export default function ClienteVehiculoInfo({
   onEliminarCliente,
   onEditarVehiculo,
   onEliminarVehiculo,
+  onLavar,
   onVolver,
 }) {
   const [hoveredId, setHoveredId] = useState(null);
@@ -96,7 +97,11 @@ export default function ClienteVehiculoInfo({
             >
               <div className="w-60 rounded-2xl bg-[#2637a2] p-6">
                 <div className="mb-1 flex justify-end gap-2">
-                  <button type="button" className={`${buttonBase} w-30 h-12 bg-green-600`}>
+                  <button
+                    type="button"
+                    onClick={() => onLavar(vehiculo)}
+                    className={`${buttonBase} w-30 h-12 bg-green-600`}
+                  >
                     LAVAR
                   </button>
                 </div>
