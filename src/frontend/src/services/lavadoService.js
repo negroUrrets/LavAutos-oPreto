@@ -13,6 +13,10 @@ export function listByVehiculo(vehi) {
   return listResource(`/api/lavados?vehi=${encodeURIComponent(vehi)}`);
 }
 
+export function listLavados() {
+  return listResource('/api/lavados');
+}
+
 export function listUtileria() {
   return listResource('/api/utilerias');
 }
@@ -35,6 +39,22 @@ export async function createLavado(lavado) {
 
   if (!response.ok) {
     throw new Error('No se pudo registrar el lavado.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function updateLavado(id, cambios) {
+  const response = await fetch(`/api/lavados/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(cambios),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo actualizar el lavado.');
   }
 
   const body = await response.json();

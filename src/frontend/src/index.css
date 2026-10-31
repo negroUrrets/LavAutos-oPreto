@@ -9,3 +9,35 @@
   --color-brand-green: #5cb85c;
   --color-brand-panel: #1f3a93;
 }
+
+@keyframes nuevo-lavado-horizontal {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(12px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes burbuja-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-nuevo-lavado {
+  animation: nuevo-lavado-horizontal 1.2s ease-in-out infinite;
+}
+
+.animate-burbuja {
+  animation: burbuja-vertical 0.8s ease-in-out 3;
+}

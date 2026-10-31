@@ -1,7 +1,7 @@
 const { CategoriaLavado, EstadoLavado, Utileria } = require('../models');
 
 const CATEGORIAS = ['Basico', 'Completo', 'Premium'];
-const ESTADOS = ['En Espera', 'Lavando', 'Terminado'];
+const ESTADOS = ['En Espera', 'Lavando', 'Terminado', 'Entregado'];
 const UTILERIAS = ['Auxilio', 'Balizas', 'Matafuegos'];
 
 async function ensureRow(model, where, defaults) {

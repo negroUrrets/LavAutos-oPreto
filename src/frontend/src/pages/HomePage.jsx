@@ -54,6 +54,8 @@ export default function HomePage() {
                   onClick={() => {
                     if (label === 'CLIENTES') {
                       navigate('/clientes');
+                    } else if (label === 'LAVADOS') {
+                      navigate('/lavados');
                     } else if (label === 'VEHICULOS') {
                       navigate('/vehiculos');
                     }

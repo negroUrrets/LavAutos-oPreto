@@ -4,6 +4,7 @@ const {
   CategoriaLavado,
   EstadoLavado,
   Utileria,
+  MarcaVehiculo,
   ModeloVehiculo,
   Vehiculo,
   Lavado,
@@ -18,7 +19,11 @@ const include = [
     as: 'vehiculo',
     include: [
       { model: Cliente, as: 'datosCliente', include: [{ model: Persona, as: 'persona' }] },
-      { model: ModeloVehiculo, as: 'modelo' },
+      {
+        model: ModeloVehiculo,
+        as: 'modelo',
+        include: [{ model: MarcaVehiculo, as: 'marca' }],
+      },
     ],
   },
   { model: CategoriaLavado, as: 'categoria' },
