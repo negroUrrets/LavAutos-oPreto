@@ -13,6 +13,7 @@ function renderHome() {
         <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
         <Route path="/vehiculos" element={<div>VEHICULOS PAGE</div>} />
         <Route path="/lavados" element={<div>LAVADOS PAGE</div>} />
+        <Route path="/dashboard" element={<div>DASHBOARD PAGE</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -114,5 +115,14 @@ describe('HomePage', () => {
     await user.click(await screen.findByRole('button', { name: 'LAVADOS' }));
 
     expect(await screen.findByText('LAVADOS PAGE')).toBeInTheDocument();
+  });
+
+  test('el botón DASHBOARD navega a la página Dashboard', async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(await screen.findByRole('button', { name: 'DASHBOARD' }));
+
+    expect(await screen.findByText('DASHBOARD PAGE')).toBeInTheDocument();
   });
 });

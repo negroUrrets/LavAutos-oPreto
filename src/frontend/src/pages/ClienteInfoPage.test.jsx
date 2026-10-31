@@ -59,11 +59,12 @@ function mockFetch(url, options = {}) {
   return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
 }
 
-function renderPage() {
+function renderPage(entry = '/clientes/5/info') {
   return render(
-    <MemoryRouter initialEntries={['/clientes/5/info']}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/clientes/:id/info" element={<ClienteInfoPage />} />
+        <Route path="/dashboard" element={<div>DASHBOARD PAGE</div>} />
         <Route path="/clientes/:id/editar" element={<div>EDITAR CLIENTE PAGE</div>} />
         <Route path="/clientes/:id/vehiculos/nuevo" element={<div>NUEVO VEHICULO PAGE</div>} />
         <Route
@@ -275,6 +276,19 @@ describe('ClienteInfoPage', () => {
     await user.click(screen.getByRole('button', { name: '←' }));
 
     expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('Volver regresa al origen cuando se abrio desde otra pantalla', async () => {
+    const user = userEvent.setup();
+    renderPage({
+      pathname: '/clientes/5/info',
+      state: { from: '/dashboard?modo=clientes&fecha=2026-05-01' },
+    });
+    await screen.findByText('LavAutos oPreto');
+
+    await user.click(screen.getByRole('button', { name: '←' }));
+
+    expect(await screen.findByText('DASHBOARD PAGE')).toBeInTheDocument();
   });
 
   test('sin sesión válida redirige al login', async () => {

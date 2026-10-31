@@ -234,4 +234,47 @@ describe('CRUD de clientes', () => {
     await Persona.destroy({ where: { codigoPersona: clienteId } });
     await removeBaseFixtures(ids);
   });
+
+  test('GET /api/clientes?sinLavadosDesde excluye clientes con lavados posteriores (200)', async () => {
+    const ids = await createBaseFixtures();
+
+    const conLavado = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Vuelve', apellido: 'Tarde', dni: 99999991 });
+    const sinLavado = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'NoVuelve', apellido: 'Nunca', dni: 99999992 });
+    const conLavadoId = conLavado.body.data.codigoPersona;
+    const sinLavadoId = sinLavado.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'SD123SD',
+      estadoVehi: true,
+      cliente: conLavadoId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    const lavado = await Lavado.create({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    await lavado.update({ fechaHoraLavado: new Date('2026-05-10T10:00:00') });
+
+    const res = await agent.get('/api/clientes?sinLavadosDesde=2026-05-01');
+
+    expect(res.status).toBe(200);
+    const codigos = res.body.data.map((cliente) => cliente.codigoPersona);
+    expect(codigos).toContain(sinLavadoId);
+    expect(codigos).not.toContain(conLavadoId);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: conLavadoId } });
+    await Persona.destroy({ where: { codigoPersona: conLavadoId } });
+    await Cliente.destroy({ where: { codigoPersona: sinLavadoId } });
+    await Persona.destroy({ where: { codigoPersona: sinLavadoId } });
+    await removeBaseFixtures(ids);
+  });
 });

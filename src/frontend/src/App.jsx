@@ -12,6 +12,7 @@ import VehiculoInfoPage from './pages/VehiculoInfoPage.jsx';
 import NuevoLavadoPage from './pages/NuevoLavadoPage.jsx';
 import LavadosPage from './pages/LavadosPage.jsx';
 import EditarLavadoPage from './pages/EditarLavadoPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
 
 export function AppRoutes() {
   return (
@@ -30,6 +31,7 @@ export function AppRoutes() {
       <Route path="/clientes/:id/vehiculos/:vehiculoId/lavar" element={<NuevoLavadoPage />} />
       <Route path="/lavados" element={<LavadosPage />} />
       <Route path="/lavados/:lavadoId/editar" element={<EditarLavadoPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
     </Routes>
   );
 }

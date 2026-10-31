@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const {
   Persona,
   Cliente,
@@ -12,6 +13,21 @@ const {
 } = require('../models');
 const { createCrudService } = require('./crudService');
 const { requireFields, assertExists } = require('../utils/validators');
+const AppError = require('../utils/AppError');
+
+const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseFecha(valor, finDelDia = false) {
+  if (!FECHA_PATTERN.test(String(valor))) {
+    throw new AppError('La fecha debe tener formato YYYY-MM-DD.', 400);
+  }
+  const hora = finDelDia ? '23:59:59.999' : '00:00:00.000';
+  const fecha = new Date(`${valor}T${hora}`);
+  if (Number.isNaN(fecha.getTime())) {
+    throw new AppError('La fecha no es valida.', 400);
+  }
+  return fecha;
+}
 
 const include = [
   {
@@ -43,6 +59,15 @@ const lavadoService = createCrudService({
     }
     if (query.vehi) {
       where.vehi = query.vehi;
+    }
+    if (query.desde || query.hasta) {
+      where.fechaHoraLavadoTerminado = {};
+      if (query.desde) {
+        where.fechaHoraLavadoTerminado[Op.gte] = parseFecha(query.desde);
+      }
+      if (query.hasta) {
+        where.fechaHoraLavadoTerminado[Op.lte] = parseFecha(query.hasta, true);
+      }
     }
     return { where };
   },

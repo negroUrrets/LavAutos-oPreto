@@ -11,6 +11,20 @@ export async function searchClientes(texto) {
   return body.data ?? [];
 }
 
+export async function listClientesSinLavados(desde) {
+  const response = await fetch(
+    `/api/clientes?sinLavadosDesde=${encodeURIComponent(desde)}`,
+    { credentials: 'include' },
+  );
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const body = await response.json();
+  return body.data ?? [];
+}
+
 export async function getCliente(id) {
   const response = await fetch(`/api/clientes/${id}`, { credentials: 'include' });
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ClienteVehiculoInfo from '../components/ClienteVehiculoInfo.jsx';
 import ConfirmPopup from '../components/ConfirmPopup.jsx';
 import Popup from '../components/Popup.jsx';
@@ -13,6 +13,8 @@ const ESTADOS_BLOQUEANTES = ['en espera', 'lavando', 'terminado'];
 export default function ClienteInfoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const origen = location.state?.from ?? '/clientes';
   const [checking, setChecking] = useState(true);
   const [cliente, setCliente] = useState(null);
   const [vehiculos, setVehiculos] = useState([]);
@@ -109,7 +111,7 @@ export default function ClienteInfoPage() {
         }
         onEliminarVehiculo={(vehiculo) => setShowDeleteVehiculo(vehiculo)}
         onLavar={handleLavar}
-        onVolver={() => navigate('/clientes')}
+        onVolver={() => navigate(origen)}
       />
 
       {showDelete ? (

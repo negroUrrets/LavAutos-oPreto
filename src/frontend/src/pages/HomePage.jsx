@@ -58,6 +58,8 @@ export default function HomePage() {
                       navigate('/lavados');
                     } else if (label === 'VEHICULOS') {
                       navigate('/vehiculos');
+                    } else if (label === 'DASHBOARD') {
+                      navigate('/dashboard');
                     }
                   }}
                   className="rounded-full bg-brand-input px-6 py-2 font-bold text-white hover:bg-[#5ea014]"

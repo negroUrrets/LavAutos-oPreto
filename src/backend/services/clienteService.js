@@ -3,6 +3,8 @@ const { sequelize, Persona, Cliente, Vehiculo, Lavado } = require('../models');
 const AppError = require('../utils/AppError');
 const { requireFields } = require('../utils/validators');
 
+const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 function toClienteResponse(cliente) {
   const plain = cliente.get({ plain: true });
   const persona = plain.persona || {};
@@ -21,6 +23,8 @@ function toClienteResponse(cliente) {
 async function list(query = {}) {
   const personaInclude = { model: Persona, as: 'persona' };
   const term = typeof query.buscar === 'string' ? query.buscar.trim() : '';
+  const sinLavadosDesde =
+    typeof query.sinLavadosDesde === 'string' ? query.sinLavadosDesde.trim() : '';
 
   if (term) {
     const like = `%${term}%`;
@@ -36,11 +40,37 @@ async function list(query = {}) {
     personaInclude.required = true;
   }
 
+  const where = { estadoCliente: true };
+
+  if (sinLavadosDesde) {
+    const excluir = await clientesConLavadosDesde(sinLavadosDesde);
+    if (excluir.length > 0) {
+      where.codigoPersona = { [Op.notIn]: excluir };
+    }
+  }
+
   const clientes = await Cliente.findAll({
-    where: { estadoCliente: true },
+    where,
     include: [personaInclude],
   });
   return clientes.map(toClienteResponse);
+}
+
+async function clientesConLavadosDesde(valor) {
+  if (!FECHA_PATTERN.test(valor)) {
+    throw new AppError('La fecha debe tener formato YYYY-MM-DD.', 400);
+  }
+  const limite = new Date(`${valor}T23:59:59.999`);
+  if (Number.isNaN(limite.getTime())) {
+    throw new AppError('La fecha no es valida.', 400);
+  }
+
+  const lavados = await Lavado.findAll({
+    where: { fechaHoraLavado: { [Op.gt]: limite } },
+    include: [{ model: Vehiculo, as: 'vehiculo', attributes: ['cliente'] }],
+  });
+
+  return [...new Set(lavados.map((lavado) => lavado.vehiculo?.cliente).filter(Boolean))];
 }
 
 async function getById(id) {

@@ -13,8 +13,15 @@ export function listByVehiculo(vehi) {
   return listResource(`/api/lavados?vehi=${encodeURIComponent(vehi)}`);
 }
 
-export function listLavados() {
-  return listResource('/api/lavados');
+export function listLavados(filtros = {}) {
+  const params = new URLSearchParams();
+  ['estado', 'vehi', 'desde', 'hasta'].forEach((campo) => {
+    if (filtros[campo] !== undefined && filtros[campo] !== null && filtros[campo] !== '') {
+      params.set(campo, filtros[campo]);
+    }
+  });
+  const query = params.toString();
+  return listResource(query ? `/api/lavados?${query}` : '/api/lavados');
 }
 
 export function listUtileria() {

@@ -41,6 +41,17 @@ describe('lavadoService', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados', { credentials: 'include' });
   });
 
+  test('listLavados arma la query con los filtros recibidos', async () => {
+    mockJson([]);
+
+    await listLavados({ estado: 3, desde: '2026-01-01', hasta: '2026-01-31' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/lavados?estado=3&desde=2026-01-01&hasta=2026-01-31',
+      { credentials: 'include' },
+    );
+  });
+
   test('getLavado consulta GET /api/lavados/:id y devuelve null si falla', async () => {
     mockJson({ codigoLavado: 4 });
 

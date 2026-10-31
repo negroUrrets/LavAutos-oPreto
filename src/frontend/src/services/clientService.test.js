@@ -3,6 +3,7 @@ import {
   createCliente,
   deleteCliente,
   getCliente,
+  listClientesSinLavados,
   searchClientes,
   updateCliente,
 } from './clientService.js';
@@ -23,6 +24,21 @@ describe('clientService', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/clientes?buscar=juan', {
       credentials: 'include',
     });
+    expect(data).toEqual([{ codigoPersona: 1 }]);
+  });
+
+  test('listClientesSinLavados consulta GET /api/clientes?sinLavadosDesde=', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [{ codigoPersona: 1 }] }),
+    });
+
+    const data = await listClientesSinLavados('2026-05-01');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/clientes?sinLavadosDesde=2026-05-01',
+      { credentials: 'include' },
+    );
     expect(data).toEqual([{ codigoPersona: 1 }]);
   });
 

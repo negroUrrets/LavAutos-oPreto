@@ -285,3 +285,45 @@ describe('marcas de tiempo del lavado', () => {
     );
   });
 });
+
+describe('filtros por fecha de entrega', () => {
+  function crearLavado() {
+    return agent.post('/api/lavados').send({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+  }
+
+  async function fijarEntrega(id, fecha) {
+    const lavado = await Lavado.findByPk(id);
+    await lavado.update({ fechaHoraLavadoTerminado: new Date(fecha) });
+  }
+
+  test('GET /api/lavados?desde&hasta filtra por fecha de entrega (200)', async () => {
+    const dentro = await crearLavado();
+    const fuera = await crearLavado();
+    createdLavados.push(dentro.body.data.codigoLavado, fuera.body.data.codigoLavado);
+
+    await fijarEntrega(dentro.body.data.codigoLavado, '2026-01-15T10:00:00');
+    await fijarEntrega(fuera.body.data.codigoLavado, '2026-03-20T10:00:00');
+
+    const res = await agent.get(
+      `/api/lavados?vehi=${vehiculoId}&desde=2026-01-01&hasta=2026-01-31`,
+    );
+
+    expect(res.status).toBe(200);
+    const codigos = res.body.data.map((lavado) => lavado.codigoLavado);
+    expect(codigos).toContain(dentro.body.data.codigoLavado);
+    expect(codigos).not.toContain(fuera.body.data.codigoLavado);
+  });
+
+  test('GET /api/lavados con fecha invalida responde 400', async () => {
+    const res = await agent.get('/api/lavados?desde=no-es-fecha');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+});
