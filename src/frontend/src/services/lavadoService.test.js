@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   createLavado,
+  getLavado,
   listByVehiculo,
   listCategoriasLavado,
   listEstadosLavado,
@@ -38,6 +39,19 @@ describe('lavadoService', () => {
     await listLavados();
 
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados', { credentials: 'include' });
+  });
+
+  test('getLavado consulta GET /api/lavados/:id y devuelve null si falla', async () => {
+    mockJson({ codigoLavado: 4 });
+
+    const data = await getLavado(4);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados/4', { credentials: 'include' });
+    expect(data).toEqual({ codigoLavado: 4 });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
+
+    expect(await getLavado(5)).toBeNull();
   });
 
   test('updateLavado hace PUT /api/lavados/:id', async () => {

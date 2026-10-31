@@ -79,6 +79,7 @@ function renderPage() {
     <MemoryRouter initialEntries={['/lavados']}>
       <Routes>
         <Route path="/lavados" element={<LavadosPage />} />
+        <Route path="/lavados/:lavadoId/editar" element={<div>EDITAR LAVADO PAGE</div>} />
         <Route path="/home" element={<div>HOME PAGE</div>} />
         <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
         <Route path="/login" element={<div>LOGIN PAGE</div>} />
@@ -157,17 +158,14 @@ describe('LavadosPage', () => {
     expect(screen.getByDisplayValue('AB-121-CD')).toHaveAttribute('readonly');
   });
 
-  test('Editar no ejecuta ninguna accion', async () => {
+  test('Editar navega a la pagina de edicion del lavado', async () => {
     const user = userEvent.setup();
     lavados = [crearLavado(1, 1)];
     renderPage();
 
     await user.click(await screen.findByRole('button', { name: 'Editar' }));
 
-    expect(globalThis.fetch).not.toHaveBeenCalledWith(
-      expect.stringContaining('/api/lavados/1'),
-      expect.anything(),
-    );
+    expect(await screen.findByText('EDITAR LAVADO PAGE')).toBeInTheDocument();
   });
 
   test('contrae y expande una seccion', async () => {

@@ -124,3 +124,13 @@ El botón `VEHICULOS` de la página de inicio SHALL navegar a la página «Vehic
 
 - **WHEN** se hace clic en `VEHICULOS` en la página de inicio
 - **THEN** la aplicación navega a `/vehiculos`
+
+### Requirement: Enlace a Lavados
+
+El botón `LAVADOS` del panel de accesos del home SHALL navegar a la página de Lavados
+(`/lavados`).
+
+#### Scenario: Abrir Lavados desde el home
+
+- **WHEN** se hace clic en el botón `LAVADOS` del home
+- **THEN** la aplicación navega a la página de Lavados

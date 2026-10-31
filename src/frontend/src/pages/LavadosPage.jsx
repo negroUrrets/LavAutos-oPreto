@@ -300,6 +300,7 @@ export default function LavadosPage() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => navigate(`/lavados/${lavado.codigoLavado}/editar`)}
                           className="rounded-full bg-gray-400 px-4 py-1 text-sm font-bold text-white"
                         >
                           Editar

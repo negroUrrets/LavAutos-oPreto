@@ -29,6 +29,17 @@ export function listEstadosLavado() {
   return listResource('/api/estados-lavado');
 }
 
+export async function getLavado(id) {
+  const response = await fetch(`/api/lavados/${id}`, { credentials: 'include' });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const body = await response.json();
+  return body.data ?? null;
+}
+
 export async function createLavado(lavado) {
   const response = await fetch('/api/lavados', {
     method: 'POST',

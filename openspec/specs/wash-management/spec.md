@@ -47,7 +47,8 @@ opcional, y responder `201` con el lavado creado. El backend SHALL establecer
 ### Requirement: Listar lavados
 
 `GET /api/lavados` SHALL devolver la lista de lavados con `200` y permitir filtrar por
-estado mediante el parámetro de consulta `estado`, que indica el código de `EstadoLavado`.
+estado mediante el parámetro de consulta `estado`, que indica el código de `EstadoLavado`, y
+por vehículo mediante el parámetro `vehi`.
 
 #### Scenario: Listado con resultados
 
@@ -58,6 +59,11 @@ estado mediante el parámetro de consulta `estado`, que indica el código de `Es
 
 - **WHEN** se consulta el listado con `estado` igual al código del estado activo
 - **THEN** la respuesta incluye únicamente los lavados cuyo `estado` coincide con ese código
+
+#### Scenario: Filtrar por vehículo
+
+- **WHEN** se consulta el listado con `vehi` igual al código de un vehículo
+- **THEN** la respuesta incluye únicamente los lavados de ese vehículo
 
 ### Requirement: Obtener lavado
 
@@ -172,3 +178,27 @@ y `estadoVehi = 0` de todos sus vehículos. Los lavados NO SHALL eliminarse.
 
 - **WHEN** se solicita la baja de un vehículo o de un cliente sin lavados asociados
 - **THEN** el registro se elimina permanentemente y la respuesta es `204`
+
+### Requirement: Estados de lavado base
+
+El seed SHALL garantizar los estados de lavado `En Espera`, `Lavando`, `Terminado` y
+`Entregado`, sin duplicar los existentes ni sobrescribirlos.
+
+#### Scenario: Estados creados
+
+- **WHEN** se ejecuta el seed y falta alguno de esos estados
+- **THEN** se crea el estado faltante en `EstadoLavado`
+
+#### Scenario: Estados ya existentes
+
+- **WHEN** se ejecuta el seed y los estados ya existen
+- **THEN** no se duplican ni se modifican
+
+### Requirement: Listar estados de lavado
+
+`GET /api/estados-lavado` SHALL devolver la lista de estados de lavado con `200`.
+
+#### Scenario: Listado de estados
+
+- **WHEN** se solicita la lista de estados de lavado
+- **THEN** la respuesta es `200` con los estados y su `descripcionEstado`
