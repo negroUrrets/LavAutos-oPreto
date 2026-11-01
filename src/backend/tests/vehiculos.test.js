@@ -3,16 +3,20 @@ const {
   sequelize,
   Vehiculo,
   Lavado,
+  EstadoLavado,
   CategoriaVehiculo,
   MarcaVehiculo,
   ModeloVehiculo,
 } = require('../models');
+const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
 const { createBaseFixtures, removeBaseFixtures, suffix } = require('./helpers/fixtures');
 const { loginAgent, removeTestUser } = require('./helpers/auth');
 
 let ids;
 let agent;
 let authUser;
+let estadoEnEsperaId;
+let estadoEntregadoId;
 const createdVehiculos = [];
 const createdCategorias = [];
 const createdMarcas = [];
@@ -20,6 +24,13 @@ const createdMarcas = [];
 beforeAll(async () => {
   await sequelize.authenticate();
   ids = await createBaseFixtures();
+  await ensureLavadoCatalogs();
+  estadoEnEsperaId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'En Espera' } })
+  ).codigoEstado;
+  estadoEntregadoId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'Entregado' } })
+  ).codigoEstado;
   ({ agent, user: authUser } = await loginAgent(app));
 });
 
@@ -206,6 +217,74 @@ describe('CRUD de vehículos y catálogos', () => {
 
     expect(res.status).toBe(204);
 
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(false);
+  });
+
+  test('PUT /api/vehiculos/:id con lavado activo responde 409 y no modifica', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `B${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.put(`/api/vehiculos/${vehiculoId}`).send({ patenteVehi: 'CAMBIO01' });
+
+    expect(res.status).toBe(409);
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb.patenteVehi).not.toBe('CAMBIO01');
+  });
+
+  test('DELETE /api/vehiculos/:id con lavado activo responde 409 y no da de baja', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `L${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(409);
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(true);
+  });
+
+  test('DELETE /api/vehiculos/:id con lavado entregado aplica baja lógica (204)', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `T${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      estado: estadoEntregadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(204);
     const enDb = await Vehiculo.findByPk(vehiculoId);
     expect(enDb).not.toBeNull();
     expect(Boolean(enDb.estadoVehi)).toBe(false);

@@ -6,6 +6,7 @@ import ClienteInfoPage from './ClienteInfoPage.jsx';
 
 let sessionOk = true;
 let lavadosVehiculo = [];
+let deleteStatus = 204;
 
 const cliente = {
   codigoPersona: 5,
@@ -41,14 +42,16 @@ function mockFetch(url, options = {}) {
     return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
   }
   if (url === '/api/clientes/5' && options.method === 'DELETE') {
-    return Promise.resolve({ ok: true, status: 204 });
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
   }
   if (url === '/api/clientes/5') {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: cliente }) });
   }
   if (url === '/api/vehiculos/9' && options.method === 'DELETE') {
-    vehiculos = vehiculos.filter((vehiculo) => vehiculo.codigoVehi !== 9);
-    return Promise.resolve({ ok: true, status: 204 });
+    if (deleteStatus < 400) {
+      vehiculos = vehiculos.filter((vehiculo) => vehiculo.codigoVehi !== 9);
+    }
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
   }
   if (url === '/api/vehiculos?cliente=5') {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: vehiculos }) });
@@ -86,6 +89,7 @@ beforeEach(() => {
   sessionOk = true;
   vehiculos = baseVehiculos();
   lavadosVehiculo = [];
+  deleteStatus = 204;
   globalThis.fetch = vi.fn(mockFetch);
 });
 
@@ -289,6 +293,77 @@ describe('ClienteInfoPage', () => {
     await user.click(screen.getByRole('button', { name: '←' }));
 
     expect(await screen.findByText('DASHBOARD PAGE')).toBeInTheDocument();
+  });
+
+  test('Editar cliente con lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR CLIENTE PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar cliente con lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Lavando' } }];
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('Editar vehiculo con lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Terminado' } }];
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR VEHICULO PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar vehiculo con lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('ACEPTAR con 409 muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    deleteStatus = 409;
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Eliminar' }));
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('CLIENTES PAGE')).not.toBeInTheDocument();
   });
 
   test('sin sesión válida redirige al login', async () => {

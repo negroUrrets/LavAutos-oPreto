@@ -1,14 +1,24 @@
 const app = require('../app');
-const { sequelize, Persona, Cliente, Vehiculo, Lavado } = require('../models');
+const { sequelize, Persona, Cliente, Vehiculo, Lavado, EstadoLavado } = require('../models');
+const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
 const { createBaseFixtures, removeBaseFixtures } = require('./helpers/fixtures');
 const { loginAgent, removeTestUser } = require('./helpers/auth');
 
 const createdClientes = [];
 let agent;
 let authUser;
+let estadoEnEsperaId;
+let estadoEntregadoId;
 
 beforeAll(async () => {
   await sequelize.authenticate();
+  await ensureLavadoCatalogs();
+  estadoEnEsperaId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'En Espera' } })
+  ).codigoEstado;
+  estadoEntregadoId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'Entregado' } })
+  ).codigoEstado;
   ({ agent, user: authUser } = await loginAgent(app));
 });
 
@@ -275,6 +285,111 @@ describe('CRUD de clientes', () => {
     await Persona.destroy({ where: { codigoPersona: conLavadoId } });
     await Cliente.destroy({ where: { codigoPersona: sinLavadoId } });
     await Persona.destroy({ where: { codigoPersona: sinLavadoId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('PUT /api/clientes/:id con vehiculo en lavado activo responde 409', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Bloq', apellido: 'Edit', dni: 10101010 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'BE123BE',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.put(`/api/clientes/${clienteId}`).send({ nombre: 'Cambiado' });
+
+    expect(res.status).toBe(409);
+    const enDb = await Persona.findByPk(clienteId);
+    expect(enDb.nombre).toBe('Bloq');
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con vehiculo en lavado activo responde 409', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Bloq', apellido: 'Baja', dni: 20202020 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'BB456BB',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(409);
+    const clienteDb = await Cliente.findByPk(clienteId);
+    expect(Boolean(clienteDb.estadoCliente)).toBe(true);
+    const vehiculoDb = await Vehiculo.findByPk(vehiculo.codigoVehi);
+    expect(Boolean(vehiculoDb.estadoVehi)).toBe(true);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con lavado entregado aplica baja logica (204)', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Entregado', apellido: 'Baja', dni: 30303030 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'EE789EE',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      estado: estadoEntregadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(204);
+    const clienteDb = await Cliente.findByPk(clienteId);
+    expect(clienteDb).not.toBeNull();
+    expect(Boolean(clienteDb.estadoCliente)).toBe(false);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
     await removeBaseFixtures(ids);
   });
 });

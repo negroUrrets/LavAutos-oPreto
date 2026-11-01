@@ -1,3 +1,14 @@
+const ESTADOS_BLOQUEANTES = ['en espera', 'lavando', 'terminado'];
+
+export const MENSAJE_LAVADO_ACTIVO =
+  'Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado';
+
+function normalizarEstado(texto) {
+  return String(texto ?? '')
+    .trim()
+    .toLowerCase();
+}
+
 async function listResource(path) {
   const response = await fetch(path, { credentials: 'include' });
 
@@ -11,6 +22,22 @@ async function listResource(path) {
 
 export function listByVehiculo(vehi) {
   return listResource(`/api/lavados?vehi=${encodeURIComponent(vehi)}`);
+}
+
+export async function tieneLavadoActivo(vehiculoIds = []) {
+  const ids = vehiculoIds.filter((id) => id !== undefined && id !== null);
+
+  if (ids.length === 0) {
+    return false;
+  }
+
+  const listas = await Promise.all(ids.map((id) => listByVehiculo(id)));
+
+  return listas.some((lavados) =>
+    lavados.some((lavado) =>
+      ESTADOS_BLOQUEANTES.includes(normalizarEstado(lavado.datosEstado?.descripcionEstado)),
+    ),
+  );
 }
 
 export function listLavados(filtros = {}) {

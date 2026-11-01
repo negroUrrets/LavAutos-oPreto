@@ -9,6 +9,7 @@ const {
   Lavado,
 } = require('../models');
 const { createCrudService } = require('./crudService');
+const { assertSinLavadoActivo } = require('./lavadoActivoService');
 const { requireFields, assertExists } = require('../utils/validators');
 const AppError = require('../utils/AppError');
 
@@ -54,12 +55,24 @@ const baseVehiculoService = createCrudService({
   },
 });
 
+async function update(id, payload) {
+  const vehiculo = await Vehiculo.findByPk(id);
+  if (!vehiculo) {
+    throw new AppError('Vehiculo no encontrado.', 404);
+  }
+
+  await assertSinLavadoActivo([id]);
+  return baseVehiculoService.update(id, payload);
+}
+
 async function remove(id) {
   return sequelize.transaction(async (transaction) => {
     const vehiculo = await Vehiculo.findByPk(id, { transaction });
     if (!vehiculo) {
       throw new AppError('Vehiculo no encontrado.', 404);
     }
+
+    await assertSinLavadoActivo([id], transaction);
 
     const lavados = await Lavado.count({ where: { vehi: id }, transaction });
 
@@ -72,4 +85,4 @@ async function remove(id) {
   });
 }
 
-module.exports = { ...baseVehiculoService, remove };
+module.exports = { ...baseVehiculoService, update, remove };

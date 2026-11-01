@@ -7,6 +7,8 @@ import {
   listEstadosLavado,
   listLavados,
   listUtileria,
+  MENSAJE_LAVADO_ACTIVO,
+  tieneLavadoActivo,
   updateLavado,
   updateUtileria,
 } from './lavadoService.js';
@@ -31,6 +33,35 @@ describe('lavadoService', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados?vehi=9', {
       credentials: 'include',
     });
+  });
+
+  test('tieneLavadoActivo detecta En Espera, Lavando y Terminado', async () => {
+    for (const estado of ['En Espera', 'Lavando', 'Terminado']) {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ data: [{ datosEstado: { descripcionEstado: estado } }] }),
+      });
+
+      expect(await tieneLavadoActivo([1])).toBe(true);
+    }
+  });
+
+  test('tieneLavadoActivo no bloquea con Entregado ni sin vehículos', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ data: [{ datosEstado: { descripcionEstado: 'Entregado' } }] }),
+    });
+
+    expect(await tieneLavadoActivo([2])).toBe(false);
+    expect(await tieneLavadoActivo([])).toBe(false);
+  });
+
+  test('expone el mensaje de lavado activo', () => {
+    expect(MENSAJE_LAVADO_ACTIVO).toBe(
+      'Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado',
+    );
   });
 
   test('listLavados consulta GET /api/lavados', async () => {

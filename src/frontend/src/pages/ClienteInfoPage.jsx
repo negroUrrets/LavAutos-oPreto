@@ -5,10 +5,8 @@ import ConfirmPopup from '../components/ConfirmPopup.jsx';
 import Popup from '../components/Popup.jsx';
 import { fetchSession } from '../services/authService.js';
 import { deleteCliente, getCliente } from '../services/clientService.js';
-import { listByVehiculo } from '../services/lavadoService.js';
+import { MENSAJE_LAVADO_ACTIVO, tieneLavadoActivo } from '../services/lavadoService.js';
 import { deleteVehiculo, listByCliente } from '../services/vehicleService.js';
-
-const ESTADOS_BLOQUEANTES = ['en espera', 'lavando', 'terminado'];
 
 export default function ClienteInfoPage() {
   const { id } = useParams();
@@ -21,6 +19,7 @@ export default function ClienteInfoPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [showDeleteVehiculo, setShowDeleteVehiculo] = useState(null);
   const [showLavarWarning, setShowLavarWarning] = useState(false);
+  const [showBloqueo, setShowBloqueo] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -57,7 +56,13 @@ export default function ClienteInfoPage() {
   async function handleConfirmDelete() {
     try {
       await deleteCliente(id);
-    } finally {
+      navigate('/clientes');
+    } catch (error) {
+      setShowDelete(false);
+      if (error.status === 409) {
+        setShowBloqueo(true);
+        return;
+      }
       navigate('/clientes');
     }
   }
@@ -65,10 +70,16 @@ export default function ClienteInfoPage() {
   async function handleConfirmDeleteVehiculo() {
     try {
       await deleteVehiculo(showDeleteVehiculo?.codigoVehi);
-    } finally {
       const lista = await listByCliente(id);
       setVehiculos(lista);
       setShowDeleteVehiculo(null);
+      navigate(`/clientes/${id}/info`, { replace: true });
+    } catch (error) {
+      setShowDeleteVehiculo(null);
+      if (error.status === 409) {
+        setShowBloqueo(true);
+        return;
+      }
       navigate(`/clientes/${id}/info`, { replace: true });
     }
   }
@@ -78,13 +89,40 @@ export default function ClienteInfoPage() {
     navigate(`/clientes/${id}/info`, { replace: true });
   }
 
+  async function handleEditarCliente() {
+    if (await tieneLavadoActivo(vehiculos.map((vehiculo) => vehiculo.codigoVehi))) {
+      setShowBloqueo(true);
+      return;
+    }
+    navigate(`/clientes/${id}/editar`);
+  }
+
+  async function handleEliminarCliente() {
+    if (await tieneLavadoActivo(vehiculos.map((vehiculo) => vehiculo.codigoVehi))) {
+      setShowBloqueo(true);
+      return;
+    }
+    setShowDelete(true);
+  }
+
+  async function handleEditarVehiculo(vehiculo) {
+    if (await tieneLavadoActivo([vehiculo.codigoVehi])) {
+      setShowBloqueo(true);
+      return;
+    }
+    navigate(`/clientes/${id}/vehiculos/${vehiculo.codigoVehi}/editar`);
+  }
+
+  async function handleEliminarVehiculo(vehiculo) {
+    if (await tieneLavadoActivo([vehiculo.codigoVehi])) {
+      setShowBloqueo(true);
+      return;
+    }
+    setShowDeleteVehiculo(vehiculo);
+  }
+
   async function handleLavar(vehiculo) {
-    const lavados = await listByVehiculo(vehiculo.codigoVehi);
-    const bloqueado = lavados.some((lavado) =>
-      ESTADOS_BLOQUEANTES.includes(
-        String(lavado.datosEstado?.descripcionEstado ?? '').trim().toLowerCase(),
-      ),
-    );
+    const bloqueado = await tieneLavadoActivo([vehiculo.codigoVehi]);
 
     if (bloqueado) {
       setShowLavarWarning(true);
@@ -104,12 +142,10 @@ export default function ClienteInfoPage() {
         cliente={cliente}
         vehiculos={vehiculos}
         onNuevoVehiculo={() => navigate(`/clientes/${id}/vehiculos/nuevo`)}
-        onEditarCliente={() => navigate(`/clientes/${id}/editar`)}
-        onEliminarCliente={() => setShowDelete(true)}
-        onEditarVehiculo={(vehiculo) =>
-          navigate(`/clientes/${id}/vehiculos/${vehiculo.codigoVehi}/editar`)
-        }
-        onEliminarVehiculo={(vehiculo) => setShowDeleteVehiculo(vehiculo)}
+        onEditarCliente={handleEditarCliente}
+        onEliminarCliente={handleEliminarCliente}
+        onEditarVehiculo={handleEditarVehiculo}
+        onEliminarVehiculo={handleEliminarVehiculo}
         onLavar={handleLavar}
         onVolver={() => navigate(origen)}
       />
@@ -135,6 +171,10 @@ export default function ClienteInfoPage() {
           message="El vehiculo ya tiene un lavado en curso."
           onClose={() => setShowLavarWarning(false)}
         />
+      ) : null}
+
+      {showBloqueo ? (
+        <Popup message={MENSAJE_LAVADO_ACTIVO} onClose={() => setShowBloqueo(false)} />
       ) : null}
     </>
   );

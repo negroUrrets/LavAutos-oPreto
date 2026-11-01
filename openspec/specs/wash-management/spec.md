@@ -159,20 +159,20 @@ El backend SHALL exponer operaciones CRUD para `CategoriaLavado` en
 
 ### Requirement: Baja con lavados asociados
 
-Un vehículo o un cliente con uno o más lavados asociados, sin importar el `estado` de esos
-lavados, NO SHALL eliminarse físicamente. La baja SHALL aplicarse como baja lógica:
-`Vehiculo.estadoVehi = 0`, y en el caso de un cliente, además `Cliente.estadoCliente = 0`
-y `estadoVehi = 0` de todos sus vehículos. Los lavados NO SHALL eliminarse.
+Un vehículo o un cliente con lavados en `En Espera`, `Lavando` o `Terminado` NO SHALL darse de
+baja: la respuesta SHALL ser `409` y los registros SHALL quedar sin cambios. Con lavados solo
+en otros estados, la baja SHALL ser lógica (`estadoVehi = 0`, y en un cliente además
+`estadoCliente = 0` y sus vehículos con `estadoVehi = 0`). Los lavados NO SHALL eliminarse.
 
 #### Scenario: Vehículo con lavados
 
-- **WHEN** se solicita la baja de un vehículo que tiene uno o más lavados asociados
-- **THEN** la respuesta es `204`, el vehículo permanece almacenado con `estadoVehi = 0` y sus lavados no se eliminan
+- **WHEN** se solicita la baja de un vehículo que tiene un lavado en estado `En Espera`, `Lavando` o `Terminado`
+- **THEN** la respuesta es `409` y el vehículo y sus lavados quedan sin cambios
 
 #### Scenario: Cliente cuyos vehículos tienen lavados
 
-- **WHEN** se solicita la baja de un cliente y alguno de sus vehículos tiene uno o más lavados asociados
-- **THEN** la respuesta es `204`, el cliente queda con `estadoCliente = 0`, todos sus vehículos quedan con `estadoVehi = 0` y ningún registro se elimina
+- **WHEN** se solicita la baja de un cliente y alguno de sus vehículos tiene un lavado en estado `En Espera`, `Lavando` o `Terminado`
+- **THEN** la respuesta es `409` y el cliente, sus vehículos y sus lavados quedan sin cambios
 
 #### Scenario: Lavado en estado distinto al activo
 

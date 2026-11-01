@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const { sequelize, Persona, Cliente, Vehiculo, Lavado } = require('../models');
 const AppError = require('../utils/AppError');
 const { requireFields } = require('../utils/validators');
+const { assertSinLavadoActivo } = require('./lavadoActivoService');
 
 const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -116,6 +117,16 @@ async function update(id, payload) {
       throw new AppError('Cliente no encontrado.', 404);
     }
 
+    const vehiculosDelCliente = await Vehiculo.findAll({
+      where: { cliente: id },
+      attributes: ['codigoVehi'],
+      transaction,
+    });
+    await assertSinLavadoActivo(
+      vehiculosDelCliente.map((vehiculo) => vehiculo.codigoVehi),
+      transaction,
+    );
+
     const persona = await Persona.findByPk(id, { transaction });
     await persona.update(
       {
@@ -149,6 +160,8 @@ async function remove(id) {
 
     const vehiculos = await Vehiculo.findAll({ where: { cliente: id }, transaction });
     const vehiculoIds = vehiculos.map((vehiculo) => vehiculo.codigoVehi);
+    await assertSinLavadoActivo(vehiculoIds, transaction);
+
     const lavados = vehiculoIds.length
       ? await Lavado.count({ where: { vehi: { [Op.in]: vehiculoIds } }, transaction })
       : 0;

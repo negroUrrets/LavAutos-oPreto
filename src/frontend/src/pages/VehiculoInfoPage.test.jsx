@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import VehiculoInfoPage from './VehiculoInfoPage.jsx';
 
 let sessionOk = true;
+let lavadosVehiculo = [];
+let vehiculosCliente = [];
+let deleteStatus = 204;
 
 const vehiculo = {
   codigoVehi: 9,
@@ -37,10 +40,22 @@ function mockFetch(url, options = {}) {
     return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
   }
   if (url === '/api/vehiculos/9' && options.method === 'DELETE') {
-    return Promise.resolve({ ok: true, status: 204 });
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
   }
   if (url === '/api/clientes/5' && options.method === 'DELETE') {
-    return Promise.resolve({ ok: true, status: 204 });
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
+  }
+  if (url === '/api/vehiculos?cliente=5') {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: vehiculosCliente }),
+    });
+  }
+  if (url === '/api/lavados?vehi=9') {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: lavadosVehiculo }),
+    });
   }
   if (url === '/api/vehiculos/9') {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: vehiculo }) });
@@ -69,6 +84,9 @@ function renderPage() {
 
 beforeEach(() => {
   sessionOk = true;
+  lavadosVehiculo = [];
+  vehiculosCliente = [];
+  deleteStatus = 204;
   globalThis.fetch = vi.fn(mockFetch);
 });
 
@@ -162,5 +180,78 @@ describe('VehiculoInfoPage', () => {
       expect.objectContaining({ method: 'DELETE' }),
     );
     expect(await screen.findByText('VEHICULOS PAGE')).toBeInTheDocument();
+  });
+
+  test('Editar del vehículo con lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR VEHICULO PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar el vehículo con lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Lavando' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('Editar del cliente con un vehículo en lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    vehiculosCliente = [{ codigoVehi: 9 }];
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Terminado' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('cliente-card');
+    await user.click(within(card).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR CLIENTE PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar el cliente con un vehículo en lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    vehiculosCliente = [{ codigoVehi: 9 }];
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('cliente-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('ACEPTAR con 409 muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    deleteStatus = 409;
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('VEHICULOS PAGE')).not.toBeInTheDocument();
   });
 });

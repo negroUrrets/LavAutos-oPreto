@@ -59,8 +59,9 @@ si existe y `404` si no.
 
 ### Requirement: Actualizar cliente
 
-`PUT /api/clientes/:id` SHALL actualizar los datos personales y el estado del
-cliente, con `200` si existe y `404` si no.
+`PUT /api/clientes/:id` SHALL actualizar los datos personales y el estado del cliente, con
+`200` si existe y `404` si no. Si alguno de sus vehículos tiene un lavado en estado
+`En Espera`, `Lavando` o `Terminado`, SHALL responder `409` y no modificar el cliente.
 
 #### Scenario: Actualización exitosa
 
@@ -72,13 +73,17 @@ cliente, con `200` si existe y `404` si no.
 - **WHEN** se intenta actualizar un cliente inexistente
 - **THEN** la respuesta es `404`
 
+#### Scenario: Cliente con vehículo en lavado
+
+- **WHEN** se intenta actualizar un cliente que tiene un vehículo con un lavado en estado `En Espera`, `Lavando` o `Terminado`
+- **THEN** la respuesta es `409` y el cliente no se modifica
+
 ### Requirement: Eliminar cliente
 
-`DELETE /api/clientes/:id` SHALL procesar la baja de un cliente existente: si el cliente
-tiene algún lavado asociado, SHALL aplicar una baja lógica (`estadoCliente = 0` y
-`estadoVehi = 0` de todos sus vehículos) sin eliminarlo; si no tiene lavados, SHALL
-eliminarlo permanentemente junto con sus vehículos. En ambos casos responde `204`, y
-`404` si el cliente no existe.
+`DELETE /api/clientes/:id` SHALL procesar la baja de un cliente existente: `409` si alguno de
+sus vehículos tiene un lavado en `En Espera`, `Lavando` o `Terminado`; baja lógica si tiene
+lavados solo en otros estados; eliminación permanente si no tiene lavados. Responde `204` en
+las bajas y `404` si el cliente no existe.
 
 #### Scenario: Eliminación exitosa con vehículos
 
@@ -92,8 +97,13 @@ eliminarlo permanentemente junto con sus vehículos. En ambos casos responde `20
 
 #### Scenario: Cliente con vehículos con lavados
 
-- **WHEN** se intenta eliminar un cliente cuyos vehículos tienen lavados asociados
-- **THEN** no se elimina permanentemente: se marca `estadoCliente = 0` y `estadoVehi = 0` de todos sus vehículos, y la respuesta es `204`
+- **WHEN** se intenta eliminar un cliente cuyos vehículos tienen lavados en estado `En Espera`, `Lavando` o `Terminado`
+- **THEN** la respuesta es `409` y el cliente y sus vehículos no se modifican
+
+#### Scenario: Cliente con vehículos con lavados entregados
+
+- **WHEN** se intenta eliminar un cliente cuyos vehículos tienen solo lavados en estado `Entregado`
+- **THEN** la respuesta es `204` y el cliente queda con `estadoCliente = 0` y sus vehículos con `estadoVehi = 0`
 
 ### Requirement: Búsqueda de clientes
 

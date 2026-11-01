@@ -79,6 +79,8 @@ export async function deleteVehiculo(id) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo eliminar el vehiculo.');
+    const error = new Error('No se pudo eliminar el vehiculo.');
+    error.status = response.status;
+    throw error;
   }
 }

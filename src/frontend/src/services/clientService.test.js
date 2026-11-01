@@ -65,6 +65,12 @@ describe('clientService', () => {
     });
   });
 
+  test('deleteCliente adjunta el estado HTTP al error', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 409 });
+
+    await expect(deleteCliente(5)).rejects.toMatchObject({ status: 409 });
+  });
+
   test('updateCliente hace PUT /api/clientes/:id con credentials include', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,

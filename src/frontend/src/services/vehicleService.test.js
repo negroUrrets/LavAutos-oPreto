@@ -64,6 +64,12 @@ describe('vehicleService', () => {
     });
   });
 
+  test('deleteVehiculo adjunta el estado HTTP al error', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 409 });
+
+    await expect(deleteVehiculo(9)).rejects.toMatchObject({ status: 409 });
+  });
+
   test('createVehiculo hace POST /api/vehiculos con credentials include', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,

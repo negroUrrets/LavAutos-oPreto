@@ -43,7 +43,9 @@ export async function deleteCliente(id) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo eliminar el cliente.');
+    const error = new Error('No se pudo eliminar el cliente.');
+    error.status = response.status;
+    throw error;
   }
 }
 
