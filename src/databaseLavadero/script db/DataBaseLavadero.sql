@@ -7,7 +7,9 @@
         lavadero de vehiculos, sus claves primarias, claves foraneas y relaciones.
 
     Alcance:
-        Solo esquema. No inserta datos iniciales ni semilla.
+        Esquema y datos iniciales de los catalogos: utilerias, categorias y estados
+        de lavado, categorias, marcas y modelos de vehiculo. Las inserciones son
+        idempotentes y no destructivas.
 
     Caracteristicas:
         - Idempotente y no destructivo: crea la base y las tablas solo si no
@@ -217,6 +219,90 @@ BEGIN
 END
 
 GO
+/* 5. Datos iniciales de catalogos */
 
+/* CategoriaVehiculo */
+SET IDENTITY_INSERT dbo.CategoriaVehiculo ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaVehiculo WHERE codigoCategoriaVehi = 43)
+    INSERT INTO dbo.CategoriaVehiculo (codigoCategoriaVehi, categoriaVehi) VALUES (43, N'Camion');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaVehiculo WHERE codigoCategoriaVehi = 44)
+    INSERT INTO dbo.CategoriaVehiculo (codigoCategoriaVehi, categoriaVehi) VALUES (44, N'Automovil');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaVehiculo WHERE codigoCategoriaVehi = 45)
+    INSERT INTO dbo.CategoriaVehiculo (codigoCategoriaVehi, categoriaVehi) VALUES (45, N'Utilitario');
+SET IDENTITY_INSERT dbo.CategoriaVehiculo OFF;
+GO
 
+/* MarcaVehiculo */
+SET IDENTITY_INSERT dbo.MarcaVehiculo ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 38)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (38, N'Iveco', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 39)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (39, N'Mercedes Benz', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 40)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (40, N'VolksWagen', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 41)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (41, N'Renault', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 42)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (42, N'Ford', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 43)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (43, N'Nissan', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 44)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (44, N'Toyota', 45);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 45)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (45, N'Peugeot', 45);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 46)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (46, N'Citroen', 45);
+SET IDENTITY_INSERT dbo.MarcaVehiculo OFF;
+GO
 
+/* ModeloVehiculo */
+SET IDENTITY_INSERT dbo.ModeloVehiculo ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 43)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (43, N'Daily', 38);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 44)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (44, N'Atego', 39);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 45)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (45, N'Worker', 40);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 46)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (46, N'Duster', 41);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 47)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (47, N'Fiesta', 42);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 48)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (48, N'Versa', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 49)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (49, N'Hilux', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 50)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (50, N'Partner', 45);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 51)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (51, N'Berlingo', 46);
+SET IDENTITY_INSERT dbo.ModeloVehiculo OFF;
+GO
+
+/* Utileria */
+IF NOT EXISTS (SELECT 1 FROM dbo.Utileria WHERE descripcionUtileria = N'Auxilio')
+    INSERT INTO dbo.Utileria (descripcionUtileria, estadoUtileria) VALUES (N'Auxilio', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.Utileria WHERE descripcionUtileria = N'Balizas')
+    INSERT INTO dbo.Utileria (descripcionUtileria, estadoUtileria) VALUES (N'Balizas', 0);
+IF NOT EXISTS (SELECT 1 FROM dbo.Utileria WHERE descripcionUtileria = N'Matafuegos')
+    INSERT INTO dbo.Utileria (descripcionUtileria, estadoUtileria) VALUES (N'Matafuegos', 0);
+GO
+
+/* CategoriaLavado */
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaLavado WHERE descripcionLavado = N'Basico')
+    INSERT INTO dbo.CategoriaLavado (descripcionLavado) VALUES (N'Basico');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaLavado WHERE descripcionLavado = N'Completo')
+    INSERT INTO dbo.CategoriaLavado (descripcionLavado) VALUES (N'Completo');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaLavado WHERE descripcionLavado = N'Premium')
+    INSERT INTO dbo.CategoriaLavado (descripcionLavado) VALUES (N'Premium');
+GO
+
+/* EstadoLavado */
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'En Espera')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'En Espera', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Lavando')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Lavando', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Terminado')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Terminado', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Entregado')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Entregado', 1);
+GO
