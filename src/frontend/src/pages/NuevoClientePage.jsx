@@ -5,12 +5,7 @@ import userIcon from '../assets/usuario.png';
 import Popup from '../components/Popup.jsx';
 import { fetchSession } from '../services/authService.js';
 import { createCliente, searchClientes } from '../services/clientService.js';
-import {
-  createVehiculo,
-  listCategorias,
-  listMarcas,
-  listModelos,
-} from '../services/vehicleService.js';
+import { listCategorias, listMarcas, listModelos } from '../services/vehicleService.js';
 import {
   formatPatente,
   isValidEmail,
@@ -123,22 +118,20 @@ export default function NuevoClientePage() {
     }
 
     try {
-      const cliente = await createCliente({
+      await createCliente({
         nombre: form.nombre,
         apellido: form.apellido,
         dni: form.dni,
         email: form.email,
         celular: form.celular,
-      });
-      await createVehiculo({
-        patenteVehi: form.patente,
-        estadoVehi: true,
-        cliente: cliente.codigoPersona,
-        modeloVehi: form.modelo,
+        vehiculo: {
+          patenteVehi: form.patente,
+          modeloVehi: form.modelo,
+        },
       });
       setPopup({ message: `Bienvenido ${form.nombre}`, action: 'navigate' });
-    } catch {
-      setWarning('No se pudo registrar el cliente.');
+    } catch (error) {
+      setWarning(error?.status ? error.message : 'No se pudo registrar el cliente.');
     }
   }
 

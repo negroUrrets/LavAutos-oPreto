@@ -7,6 +7,7 @@ import ClienteInfoPage from './ClienteInfoPage.jsx';
 
 let sessionOk = true;
 let searchDuplicado = [];
+let putError = null;
 let clienteActual = {
   codigoPersona: 5,
   dni: 28853432,
@@ -21,6 +22,13 @@ function mockFetch(url, options = {}) {
     return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
   }
   if (url === '/api/clientes/5' && options.method === 'PUT') {
+    if (putError) {
+      return Promise.resolve({
+        ok: false,
+        status: putError.status,
+        json: () => Promise.resolve({ success: false, error: { message: putError.message } }),
+      });
+    }
     clienteActual = { ...clienteActual, ...JSON.parse(options.body) };
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: clienteActual }) });
   }
@@ -54,6 +62,7 @@ function renderPage({ realInfo = false } = {}) {
 beforeEach(() => {
   sessionOk = true;
   searchDuplicado = [];
+  putError = null;
   clienteActual = {
     codigoPersona: 5,
     dni: 28853432,
@@ -178,5 +187,16 @@ describe('EditarClientePage', () => {
     await user.click(screen.getByRole('button', { name: 'Aceptar' }));
 
     expect(await screen.findByText('Editado')).toBeInTheDocument();
+  });
+
+  test('muestra el mensaje del backend al rechazar un dato duplicado', async () => {
+    putError = { status: 409, message: 'El DNI ya esta registrado.' };
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Cliente');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('El DNI ya esta registrado.');
   });
 });

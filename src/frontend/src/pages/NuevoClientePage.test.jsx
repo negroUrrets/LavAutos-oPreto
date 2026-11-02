@@ -9,6 +9,7 @@ let categorias = [];
 let marcas = [];
 let modelos = [];
 let searchResult = [];
+let createError = null;
 
 function mockFetch(url) {
   if (url === '/api/auth/session') {
@@ -27,7 +28,18 @@ function mockFetch(url) {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: searchResult }) });
   }
   if (url === '/api/clientes') {
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: { codigoPersona: 5 } }) });
+    if (createError) {
+      return Promise.resolve({
+        ok: false,
+        status: createError.status,
+        json: () =>
+          Promise.resolve({ success: false, error: { message: createError.message } }),
+      });
+    }
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: { codigoPersona: 5 } }),
+    });
   }
   if (url === '/api/vehiculos') {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: { codigoVehi: 9 } }) });
@@ -75,6 +87,7 @@ beforeEach(() => {
   marcas = [{ codigoMarcaVehi: 10, marcaVehi: 'Fiat', categoriaVehi: 1 }];
   modelos = [{ codigoModeloVehi: 100, modeloVehi: 'Uno', marcaVehi: 10 }];
   searchResult = [];
+  createError = null;
   globalThis.fetch = vi.fn(mockFetch);
 });
 
@@ -143,7 +156,7 @@ describe('NuevoClientePage', () => {
     expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/clientes', expect.anything());
   });
 
-  test('registra el cliente y el vehículo y muestra Bienvenido', async () => {
+  test('registra el cliente y el vehículo con una sola petición y muestra Bienvenido', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('Nuevo Cliente');
@@ -152,17 +165,38 @@ describe('NuevoClientePage', () => {
     await user.click(screen.getByRole('button', { name: 'Registrar' }));
 
     expect(await screen.findByText('Bienvenido Juan')).toBeInTheDocument();
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/clientes',
-      expect.objectContaining({ method: 'POST' }),
+
+    const llamada = globalThis.fetch.mock.calls.find(([url]) => url === '/api/clientes');
+    expect(llamada[1]).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"vehiculo"'),
+      }),
     );
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/vehiculos',
-      expect.objectContaining({ method: 'POST' }),
+    const payload = JSON.parse(llamada[1].body);
+    expect(payload.vehiculo).toEqual(
+      expect.objectContaining({ patenteVehi: 'AA-123-BB' }),
     );
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/vehiculos', expect.anything());
 
     await user.click(screen.getByRole('button', { name: 'Aceptar' }));
     expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('si falla el alta conjunta muestra el mensaje y no muestra Bienvenido', async () => {
+    createError = { status: 409, message: 'La patente ya esta registrada.' };
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La patente ya esta registrada.',
+    );
+    expect(screen.queryByText(/Bienvenido/)).not.toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/vehiculos', expect.anything());
   });
 
   test('Cancelar navega a la página de Clientes', async () => {

@@ -58,7 +58,14 @@ export default function NuevoLavadoPage() {
           setVehiculo(datosVehiculo);
           setUtilerias(listaUtileria);
           setCategorias(listaCategorias);
-          setEstados(listaEstados);
+          setEstados(
+            listaEstados.filter(
+              (item) =>
+                String(item.descripcionEstado ?? '')
+                  .trim()
+                  .toLowerCase() !== 'entregado',
+            ),
+          );
           setSeleccion(
             listaUtileria
               .filter((utileria) => Boolean(utileria.estadoUtileria))

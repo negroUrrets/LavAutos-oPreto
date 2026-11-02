@@ -25,6 +25,13 @@
 */
 
 SET NOCOUNT ON;
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
 GO
 
 /* 1. Base de datos */
@@ -305,4 +312,27 @@ IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Termin
     INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Terminado', 1);
 IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Entregado')
     INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Entregado', 1);
+GO
+
+/* 6. Restricciones de unicidad */
+
+/* Persona.dni */
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UQ_Persona_Dni' AND object_id = OBJECT_ID(N'dbo.Persona')
+)
+    CREATE UNIQUE INDEX UQ_Persona_Dni ON dbo.Persona (dni);
+GO
+
+/* Vehiculo.patenteClave: mayusculas, sin guiones ni espacios */
+IF COL_LENGTH(N'dbo.Vehiculo', N'patenteClave') IS NULL
+    ALTER TABLE dbo.Vehiculo
+        ADD patenteClave AS (CAST(UPPER(REPLACE(REPLACE(patenteVehi, '-', ''), ' ', '')) AS VARCHAR(20))) PERSISTED;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UQ_Vehiculo_PatenteClave' AND object_id = OBJECT_ID(N'dbo.Vehiculo')
+)
+    CREATE UNIQUE INDEX UQ_Vehiculo_PatenteClave ON dbo.Vehiculo (patenteClave);
 GO

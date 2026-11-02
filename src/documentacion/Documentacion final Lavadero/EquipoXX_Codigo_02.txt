@@ -1,0 +1,3815 @@
+PROYECTO: LavAutos oPreto - Sistema de gestion de lavadero de vehiculos
+EQUIPO: [EquipoXX]
+VERSION: entrega-final
+COMMIT: no incluido
+PARTE: 2 de 3
+
+===== INICIO ARCHIVO: src/frontend/src/components/ClienteVehiculoInfo.jsx =====
+import { useState } from 'react';
+import autoIcon from '../assets/auto.png';
+import userIcon from '../assets/usuario.png';
+import BrandHeader from './BrandHeader.jsx';
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex gap-4">
+      <dt className="w-24 text-sm font-bold text-gray-300">{label}</dt>
+      <dd className="text-sm font-bold text-white">{value}</dd>
+    </div>
+  );
+}
+
+const buttonBase = 'rounded-full px-4 py-1 text-sm font-bold text-white';
+
+export default function ClienteVehiculoInfo({
+  cliente,
+  vehiculos = [],
+  onNuevoVehiculo,
+  onEditarCliente,
+  onEliminarCliente,
+  onEditarVehiculo,
+  onEliminarVehiculo,
+  onLavar,
+  onVolver,
+}) {
+  const [hoveredId, setHoveredId] = useState(null);
+
+  function cardClasses(cardId) {
+    const base = 'transition-transform duration-200';
+    if (hoveredId === null) {
+      return base;
+    }
+    return `${base} ${hoveredId === cardId ? 'z-10 scale-105' : 'scale-95'}`;
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <BrandHeader />
+
+      <div className="mx-auto mt-2 max-w-5xl rounded-3xl border-3 border-blue-900 bg-[#8f8a8a] p-6">
+        <div className="flex flex-wrap items-start gap-6">
+          <div
+            className={cardClasses('cliente')}
+            onMouseEnter={() => setHoveredId('cliente')}
+            onMouseLeave={() => setHoveredId(null)}
+            data-testid="cliente-card"
+          >
+            <div className="w-100 rounded-2xl bg-[#2637a2] p-6">
+              <div className="mt-1 mb-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onNuevoVehiculo}
+                  className={`${buttonBase} w-30 h-12 bg-green-600`}
+                >
+                  + VEHICULO
+                </button>
+              </div>
+
+              <div className="flex items-center mb-8 gap-4">
+                <img src={userIcon} alt="Usuario" className="h-14 w-14" />
+                <dl className="space-y-1">
+                  <InfoRow label="DNI" value={cliente?.dni} />
+                  <InfoRow label="NOMBRE" value={cliente?.nombre} />
+                  <InfoRow label="APELLIDO" value={cliente?.apellido} />
+                  <InfoRow label="TELEFONO" value={cliente?.celular} />
+                  <InfoRow label="e-m@il" value={cliente?.email} />
+                </dl>
+              </div>
+              <div className="mt-4 flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={onEditarCliente}
+                  className={`${buttonBase} bg-gray-400`}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={onEliminarCliente}
+                  className={`${buttonBase} bg-red-600`}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {vehiculos.map((vehiculo) => (
+            <div
+              key={vehiculo.codigoVehi}
+              className={cardClasses(`vehiculo-${vehiculo.codigoVehi}`)}
+              onMouseEnter={() => setHoveredId(`vehiculo-${vehiculo.codigoVehi}`)}
+              onMouseLeave={() => setHoveredId(null)}
+              data-testid="vehiculo-card"
+            >
+              <div className="w-60 rounded-2xl bg-[#2637a2] p-6">
+                <div className="mb-1 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onLavar(vehiculo)}
+                    className={`${buttonBase} w-30 h-12 bg-green-600`}
+                  >
+                    LAVAR
+                  </button>
+                </div>
+                <img src={autoIcon} alt="Vehiculo" className="h-10 w-10" />
+                <dl className="mt-2 space-y-1">
+                  <InfoRow
+                    label="VEHICULO"
+                    value={vehiculo.modelo?.marca?.categoria?.categoriaVehi}
+                  />
+                  <InfoRow label="MARCA" value={vehiculo.modelo?.marca?.marcaVehi} />
+                  <InfoRow label="MODELO" value={vehiculo.modelo?.modeloVehi} />
+                  <InfoRow label="PATENTE" value={vehiculo.patenteVehi} />
+                </dl>
+                <div className="mt-8 flex justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onEditarVehiculo(vehiculo)}
+                    className={`${buttonBase} bg-gray-400`}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onEliminarVehiculo(vehiculo)}
+                    className={`${buttonBase} bg-red-600`}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={onVolver}
+            className="rounded-full bg-green-600 px-8 py-2 font-bold text-white"
+          >
+            ←
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/ClienteVehiculoInfo.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/ConfirmPopup.jsx =====
+export default function ConfirmPopup({ title = '!!! AVISO !!!', message, onConfirm, onCancel }) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/30 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-lg rounded-2xl bg-[#e0dede] p-8 text-center">
+        <p className="text-lg font-bold text-red-700">{title}</p>
+        <p className="mt-3 text-lg font-bold text-red-700">{message}</p>
+        <div className="mt-6 flex justify-center gap-6">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="rounded-full bg-green-600 px-6 py-2 text-sm font-bold text-white"
+          >
+            ACEPTAR
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full bg-red-600 px-6 py-2 text-sm font-bold text-white"
+          >
+            CANCELAR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/ConfirmPopup.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/ConfirmPopup.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, test, vi } from 'vitest';
+import ConfirmPopup from './ConfirmPopup.jsx';
+
+describe('ConfirmPopup', () => {
+  test('muestra el aviso y los botones, y dispara los callbacks', async () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <ConfirmPopup
+        message="¿ Desea eliminar permanentemente el Juan seleccionado ?"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
+    );
+
+    expect(screen.getByText('!!! AVISO !!!')).toBeInTheDocument();
+    expect(
+      screen.getByText('¿ Desea eliminar permanentemente el Juan seleccionado ?'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+    expect(onConfirm).toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'CANCELAR' }));
+    expect(onCancel).toHaveBeenCalled();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/components/ConfirmPopup.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/DateTimePanel.jsx =====
+import { useEffect, useState } from 'react';
+import { formatDate, formatTime } from '../utils/formatDateTime.js';
+
+export default function DateTimePanel() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  const { hour, minute, period } = formatTime(now);
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center rounded-3xl bg-brand-panel px-10 py-14 text-center text-white">
+      <p className="text-xl font-bold">{formatDate(now)}</p>
+      <p className="mt-8">
+        <span className="text-5xl font-bold">{hour}</span>
+        <span className="text-3xl font-bold">  {minute}</span>
+        <span className="ml-2 text-2xl font-bold">{period}</span>
+      </p>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/DateTimePanel.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/LavadoInfoPopup.jsx =====
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex gap-4">
+      <dt className="w-28 text-sm font-bold text-brand-navy">{label}</dt>
+      <dd className="text-sm font-bold text-brand-navy">{value ?? ''}</dd>
+    </div>
+  );
+}
+
+export default function LavadoInfoPopup({ lavado, onClose }) {
+  const vehiculo = lavado.vehiculo ?? {};
+  const modelo = vehiculo.modelo ?? {};
+  const persona = vehiculo.datosCliente?.persona ?? {};
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-lg rounded-3xl border-2 border-gray-400 bg-brand-pink p-8">
+        <h2 className="text-center text-xl font-bold text-brand-navy">Informacion del Lavado</h2>
+        <dl className="mt-4 space-y-1">
+          <InfoRow label="PATENTE" value={vehiculo.patenteVehi} />
+          <InfoRow label="CATEGORIA" value={lavado.categoria?.descripcionLavado} />
+          <InfoRow label="MODELO" value={modelo.modeloVehi} />
+          <InfoRow label="MARCA" value={modelo.marca?.marcaVehi} />
+          <InfoRow label="DNI" value={persona.dni} />
+          <InfoRow label="NOMBRE" value={persona.nombre} />
+          <InfoRow label="APELLIDO" value={persona.apellido} />
+          <InfoRow label="TELEFONO" value={persona.celular} />
+          <InfoRow label="e-m@il" value={persona.email} />
+        </dl>
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-brand-green px-8 py-2 font-bold text-white"
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/LavadoInfoPopup.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/LogoutPopup.jsx =====
+import userIcon from '../assets/usuario.png';
+
+export default function LogoutPopup({ onConfirm, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/30 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="relative w-64 rounded-2xl border-2 border-gray-400 bg-gray-300 p-6 text-center">
+        <button
+          type="button"
+          aria-label="Cancelar"
+          onClick={onClose}
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-gray-400 font-bold text-red-600"
+        >
+          X
+        </button>
+        <img src={userIcon} alt="Usuario" className="mx-auto h-14 w-14" />
+        
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="rounded-full bg-green-600 px-6 py-2 text-sm font-bold text-white"
+          >
+            CERRAR SESION
+          </button>
+        
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/LogoutPopup.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/Popup.jsx =====
+export default function Popup({ message, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-sm rounded-3xl border-2 border-gray-400 bg-brand-pink p-8 text-center shadow-2xl">
+        <p className="text-xl font-bold text-blue-600">{message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 rounded-full bg-brand-green px-8 py-2 font-bold text-white"
+          
+
+        >
+          Aceptar
+        </button>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/Popup.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/ClienteInfoPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import ClienteVehiculoInfo from '../components/ClienteVehiculoInfo.jsx';
+import ConfirmPopup from '../components/ConfirmPopup.jsx';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import { deleteCliente, getCliente } from '../services/clientService.js';
+import { MENSAJE_LAVADO_ACTIVO, tieneLavadoActivo } from '../services/lavadoService.js';
+import { deleteVehiculo, listByCliente } from '../services/vehicleService.js';
+
+export default function ClienteInfoPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const origen = location.state?.from ?? '/clientes';
+  const [checking, setChecking] = useState(true);
+  const [cliente, setCliente] = useState(null);
+  const [vehiculos, setVehiculos] = useState([]);
+  const [showDelete, setShowDelete] = useState(false);
+  const [showDeleteVehiculo, setShowDeleteVehiculo] = useState(null);
+  const [showLavarWarning, setShowLavarWarning] = useState(false);
+  const [showBloqueo, setShowBloqueo] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        Promise.all([getCliente(id), listByCliente(id)]).then(([datosCliente, listaVehiculos]) => {
+          if (!active) {
+            return;
+          }
+          setCliente(datosCliente);
+          setVehiculos(listaVehiculos);
+          setChecking(false);
+        });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, navigate]);
+
+  async function handleConfirmDelete() {
+    try {
+      await deleteCliente(id);
+      navigate('/clientes');
+    } catch (error) {
+      setShowDelete(false);
+      if (error.status === 409) {
+        setShowBloqueo(true);
+        return;
+      }
+      navigate('/clientes');
+    }
+  }
+
+  async function handleConfirmDeleteVehiculo() {
+    try {
+      await deleteVehiculo(showDeleteVehiculo?.codigoVehi);
+      const lista = await listByCliente(id);
+      setVehiculos(lista);
+      setShowDeleteVehiculo(null);
+      navigate(`/clientes/${id}/info`, { replace: true });
+    } catch (error) {
+      setShowDeleteVehiculo(null);
+      if (error.status === 409) {
+        setShowBloqueo(true);
+        return;
+      }
+      navigate(`/clientes/${id}/info`, { replace: true });
+    }
+  }
+
+  function handleCancelDeleteVehiculo() {
+    setShowDeleteVehiculo(null);
+    navigate(`/clientes/${id}/info`, { replace: true });
+  }
+
+  async function handleEditarCliente() {
+    if (await tieneLavadoActivo(vehiculos.map((vehiculo) => vehiculo.codigoVehi))) {
+      setShowBloqueo(true);
+      return;
+    }
+    navigate(`/clientes/${id}/editar`);
+  }
+
+  async function handleEliminarCliente() {
+    if (await tieneLavadoActivo(vehiculos.map((vehiculo) => vehiculo.codigoVehi))) {
+      setShowBloqueo(true);
+      return;
+    }
+    setShowDelete(true);
+  }
+
+  async function handleEditarVehiculo(vehiculo) {
+    if (await tieneLavadoActivo([vehiculo.codigoVehi])) {
+      setShowBloqueo(true);
+      return;
+    }
+    navigate(`/clientes/${id}/vehiculos/${vehiculo.codigoVehi}/editar`);
+  }
+
+  async function handleEliminarVehiculo(vehiculo) {
+    if (await tieneLavadoActivo([vehiculo.codigoVehi])) {
+      setShowBloqueo(true);
+      return;
+    }
+    setShowDeleteVehiculo(vehiculo);
+  }
+
+  async function handleLavar(vehiculo) {
+    const bloqueado = await tieneLavadoActivo([vehiculo.codigoVehi]);
+
+    if (bloqueado) {
+      setShowLavarWarning(true);
+      return;
+    }
+
+    navigate(`/clientes/${id}/vehiculos/${vehiculo.codigoVehi}/lavar`);
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  return (
+    <>
+      <ClienteVehiculoInfo
+        cliente={cliente}
+        vehiculos={vehiculos}
+        onNuevoVehiculo={() => navigate(`/clientes/${id}/vehiculos/nuevo`)}
+        onEditarCliente={handleEditarCliente}
+        onEliminarCliente={handleEliminarCliente}
+        onEditarVehiculo={handleEditarVehiculo}
+        onEliminarVehiculo={handleEliminarVehiculo}
+        onLavar={handleLavar}
+        onVolver={() => navigate(origen)}
+      />
+
+      {showDelete ? (
+        <ConfirmPopup
+          message={`¿ Desea eliminar al cliente "${cliente?.nombre ?? ''} ${cliente?.apellido ?? ''}" ?`}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setShowDelete(false)}
+        />
+      ) : null}
+
+      {showDeleteVehiculo ? (
+        <ConfirmPopup
+          message={`¿ Desea eliminar el vehiculo "${showDeleteVehiculo.patenteVehi ?? ''}" ?`}
+          onConfirm={handleConfirmDeleteVehiculo}
+          onCancel={handleCancelDeleteVehiculo}
+        />
+      ) : null}
+
+      {showLavarWarning ? (
+        <Popup
+          message="El vehiculo ya tiene un lavado en curso."
+          onClose={() => setShowLavarWarning(false)}
+        />
+      ) : null}
+
+      {showBloqueo ? (
+        <Popup message={MENSAJE_LAVADO_ACTIVO} onClose={() => setShowBloqueo(false)} />
+      ) : null}
+    </>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/ClienteInfoPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/ClienteInfoPage.test.jsx =====
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import ClienteInfoPage from './ClienteInfoPage.jsx';
+
+let sessionOk = true;
+let lavadosVehiculo = [];
+let deleteStatus = 204;
+
+const cliente = {
+  codigoPersona: 5,
+  dni: 28853432,
+  nombre: 'Juan',
+  apellido: 'Perez',
+  celular: 5493516699031,
+  email: 'juan@gmail.com',
+};
+
+let vehiculos = [];
+
+function baseVehiculos() {
+  return [
+    {
+      codigoVehi: 9,
+      patenteVehi: 'AC-123-DF',
+      modelo: {
+        codigoModeloVehi: 100,
+        modeloVehi: 'Fuego',
+        marca: {
+          codigoMarcaVehi: 10,
+          marcaVehi: 'Renault',
+          categoria: { codigoCategoriaVehi: 1, categoriaVehi: 'Sedan' },
+        },
+      },
+    },
+  ];
+}
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/clientes/5' && options.method === 'DELETE') {
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
+  }
+  if (url === '/api/clientes/5') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: cliente }) });
+  }
+  if (url === '/api/vehiculos/9' && options.method === 'DELETE') {
+    if (deleteStatus < 400) {
+      vehiculos = vehiculos.filter((vehiculo) => vehiculo.codigoVehi !== 9);
+    }
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
+  }
+  if (url === '/api/vehiculos?cliente=5') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: vehiculos }) });
+  }
+  if (url === '/api/lavados?vehi=9') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: lavadosVehiculo }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+}
+
+function renderPage(entry = '/clientes/5/info') {
+  return render(
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route path="/clientes/:id/info" element={<ClienteInfoPage />} />
+        <Route path="/dashboard" element={<div>DASHBOARD PAGE</div>} />
+        <Route path="/clientes/:id/editar" element={<div>EDITAR CLIENTE PAGE</div>} />
+        <Route path="/clientes/:id/vehiculos/nuevo" element={<div>NUEVO VEHICULO PAGE</div>} />
+        <Route
+          path="/clientes/:id/vehiculos/:vehiculoId/editar"
+          element={<div>EDITAR VEHICULO PAGE</div>}
+        />
+        <Route
+          path="/clientes/:id/vehiculos/:vehiculoId/lavar"
+          element={<div>NUEVO LAVADO PAGE</div>}
+        />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  vehiculos = baseVehiculos();
+  lavadosVehiculo = [];
+  deleteStatus = 204;
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('ClienteInfoPage', () => {
+  test('muestra el encabezado y la card del cliente', async () => {
+    renderPage();
+
+    expect(await screen.findByText('LavAutos oPreto')).toBeInTheDocument();
+    expect(screen.getByText('28853432')).toBeInTheDocument();
+    expect(screen.getByText('Juan')).toBeInTheDocument();
+    expect(screen.getByText('Perez')).toBeInTheDocument();
+    expect(screen.getByText('juan@gmail.com')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ VEHICULO' })).toBeInTheDocument();
+  });
+
+  test('el botón Eliminar abre el popup y ACEPTAR elimina y navega a Clientes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      screen.getByText('¿ Desea eliminar al cliente "Juan Perez" ?'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/clientes/5',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('CANCELAR cierra el popup sin eliminar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Eliminar' }));
+    await user.click(screen.getByRole('button', { name: 'CANCELAR' }));
+
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/clientes/5',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  test('Eliminar de la card de vehículo abre el popup y ACEPTAR elimina y actualiza la lista', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      screen.getByText('¿ Desea eliminar el vehiculo "AC-123-DF" ?'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/vehiculos/9',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    await waitFor(() => expect(screen.queryByTestId('vehiculo-card')).not.toBeInTheDocument());
+  });
+
+  test('CANCELAR cierra el popup de vehículo sin eliminar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Eliminar' }));
+    await user.click(screen.getByRole('button', { name: 'CANCELAR' }));
+
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos/9',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  test('el botón + VEHICULO navega a la página Agregar Vehiculo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: '+ VEHICULO' }));
+
+    expect(await screen.findByText('NUEVO VEHICULO PAGE')).toBeInTheDocument();
+  });
+
+  test('LAVAR navega a Nuevo Lavado si el vehículo no tiene lavado en curso', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'LAVAR' }));
+
+    expect(await screen.findByText('NUEVO LAVADO PAGE')).toBeInTheDocument();
+  });
+
+  test('LAVAR avisa si el vehículo ya tiene un lavado en curso', async () => {
+    lavadosVehiculo = [{ codigoLavado: 1, datosEstado: { descripcionEstado: 'Lavando' } }];
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'LAVAR' }));
+
+    expect(
+      await screen.findByText('El vehiculo ya tiene un lavado en curso.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('NUEVO LAVADO PAGE')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+    expect(
+      screen.queryByText('El vehiculo ya tiene un lavado en curso.'),
+    ).not.toBeInTheDocument();
+  });
+
+  test('el botón Editar de la card de vehículo navega a la edición', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Editar' }));
+
+    expect(await screen.findByText('EDITAR VEHICULO PAGE')).toBeInTheDocument();
+  });
+
+  test('vuelve a solicitar los vehículos al montarse', async () => {
+    renderPage();
+
+    await screen.findByTestId('vehiculo-card');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/vehiculos?cliente=5', {
+      credentials: 'include',
+    });
+  });
+
+  test('el botón Editar de la card del cliente navega a la edición', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Editar' }));
+
+    expect(await screen.findByText('EDITAR CLIENTE PAGE')).toBeInTheDocument();
+  });
+
+  test('muestra una card por vehículo con categoría, marca, modelo y patente', async () => {
+    renderPage();
+
+    expect(await screen.findByTestId('vehiculo-card')).toBeInTheDocument();
+    expect(screen.getByText('Sedan')).toBeInTheDocument();
+    expect(screen.getByText('Renault')).toBeInTheDocument();
+    expect(screen.getByText('Fuego')).toBeInTheDocument();
+    expect(screen.getByText('AC-123-DF')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'LAVAR' })).toBeInTheDocument();
+  });
+
+  test('el hover adelanta la card señalada y retrasa las demás', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+
+    await user.hover(clienteCard);
+
+    expect(clienteCard.className).toContain('scale-105');
+    expect(vehiculoCard.className).toContain('scale-95');
+  });
+
+  test('Volver navega a Clientes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('LavAutos oPreto');
+
+    await user.click(screen.getByRole('button', { name: '←' }));
+
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('Volver regresa al origen cuando se abrio desde otra pantalla', async () => {
+    const user = userEvent.setup();
+    renderPage({
+      pathname: '/clientes/5/info',
+      state: { from: '/dashboard?modo=clientes&fecha=2026-05-01' },
+    });
+    await screen.findByText('LavAutos oPreto');
+
+    await user.click(screen.getByRole('button', { name: '←' }));
+
+    expect(await screen.findByText('DASHBOARD PAGE')).toBeInTheDocument();
+  });
+
+  test('Editar cliente con lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR CLIENTE PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar cliente con lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Lavando' } }];
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('Editar vehiculo con lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Terminado' } }];
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR VEHICULO PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar vehiculo con lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const vehiculoCard = await screen.findByTestId('vehiculo-card');
+    await user.click(within(vehiculoCard).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('ACEPTAR con 409 muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    deleteStatus = 409;
+    renderPage();
+
+    const clienteCard = await screen.findByTestId('cliente-card');
+    await user.click(within(clienteCard).getByRole('button', { name: 'Eliminar' }));
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('CLIENTES PAGE')).not.toBeInTheDocument();
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/ClienteInfoPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/ClientesPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AppHeader from '../components/AppHeader.jsx';
+import { fetchSession } from '../services/authService.js';
+import { searchClientes } from '../services/clientService.js';
+
+const COLUMNS = ['DNI', 'NOMBRE', 'APELLIDO', 'CELULAR'];
+const ROW_COLORS = ['#f4e6e6', '#b4b2b2'];
+
+export default function ClientesPage() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [term, setTerm] = useState('');
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    const trimmed = term.trim();
+    if (trimmed.length < 4) {
+      setResults([]);
+      return undefined;
+    }
+
+    const id = setTimeout(() => {
+      searchClientes(trimmed)
+        .then(setResults)
+        .catch(() => setResults([]));
+    }, 300);
+
+    return () => clearTimeout(id);
+  }, [term]);
+
+  if (checking) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <AppHeader />
+
+      <div className="mx-auto mt-2 max-w-3xl rounded-3xl border-4 border-gray-500 p-6">
+        <span className="inline-block rounded-full bg-[#2637a2] px-6 py-1 text-sm font-bold text-white">
+          CLIENTES
+        </span>
+
+        <div className="mx-auto mt-4 flex max-w-2xl items-center gap-4 rounded-2xl bg-[#8f8a8a] p-3">
+          <input
+            type="text"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            placeholder="Dni, Nombre, Apellido..."
+            aria-label="Buscar clientes"
+            className="flex-1 rounded-full bg-[#f4e6e6] px-4 py-2 text-brand-navy outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => navigate('/clientes/nuevo')}
+            className="rounded-full bg-green-600 px-6 py-2 font-bold text-white"
+          >
+            + CLIENTE
+          </button>
+        </div>
+
+        <div className="mx-auto mt-4 max-w-2xl rounded-2xl bg-[#2637a2] p-4">
+          <table className="w-full text-center">
+            <thead>
+              <tr className="text-gray-400">
+                {COLUMNS.map((col) => (
+                  <th key={col} className="p-2 text-sm font-bold">
+                    {col}
+                  </th>
+                ))}
+                <th className="p-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {results.length > 0 ? (
+                results.map((cliente, index) => (
+                  <tr
+                    key={cliente.codigoPersona}
+                    data-testid="cliente-row"
+                    style={{ backgroundColor: ROW_COLORS[index % ROW_COLORS.length] }}
+                  >
+                    <td className="p-2">{cliente.dni}</td>
+                    <td className="p-2">{cliente.nombre}</td>
+                    <td className="p-2">{cliente.apellido}</td>
+                    <td className="p-2">{cliente.celular}</td>
+                    <td className="p-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/clientes/${cliente.codigoPersona}/info`)}
+                        className="rounded-full bg-green-600 px-4 py-1 font-bold text-white"
+                      >
+                        + info
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={COLUMNS.length + 1} className="p-6 text-center font-bold text-gray-400">
+                    Busqueda sin resultados ...
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => navigate('/home')}
+            className="rounded-2xl bg-green-600 px-4 py-2 text-xl font-bold text-white"
+          >
+            ← 
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/ClientesPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/ClientesPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import ClientesPage from './ClientesPage.jsx';
+
+let searchResults = [];
+let sessionOk = true;
+
+function mockFetch(url) {
+  if (typeof url === 'string' && url.startsWith('/api/clientes?buscar=')) {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ success: true, data: searchResults }),
+    });
+  }
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  return Promise.resolve({ ok: true, status: 204 });
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/clientes']}>
+      <Routes>
+        <Route path="/clientes" element={<ClientesPage />} />
+        <Route path="/clientes/nuevo" element={<div>NUEVO CLIENTE PAGE</div>} />
+        <Route path="/clientes/:id/info" element={<div>CLIENTE INFO PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+        <Route path="/home" element={<div>HOME PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  searchResults = [];
+  sessionOk = true;
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('ClientesPage', () => {
+  test('muestra la etiqueta CLIENTES, el buscador, + CLIENTE y Volver', async () => {
+    renderPage();
+
+    expect(await screen.findByLabelText('Buscar clientes')).toBeInTheDocument();
+    expect(screen.getByText('CLIENTES')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ CLIENTE' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '←' })).toBeInTheDocument();
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('con menos de 4 caracteres no se consulta', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.type(screen.getByLabelText('Buscar clientes'), 'jua');
+
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/clientes?buscar='),
+      expect.anything(),
+    );
+  });
+
+  test('con 4 o más caracteres consulta y muestra resultados', async () => {
+    searchResults = [
+      { codigoPersona: 1, dni: 28853432, nombre: 'JUAN', apellido: 'alvarez', celular: 28853432 },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.type(screen.getByLabelText('Buscar clientes'), 'juan');
+
+    expect(await screen.findByText('alvarez')).toBeInTheDocument();
+  });
+
+  test('sin coincidencias muestra "Busqueda sin resultados ..."', async () => {
+    searchResults = [];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.type(screen.getByLabelText('Buscar clientes'), 'zzzz');
+
+    expect(await screen.findByText('Busqueda sin resultados ...')).toBeInTheDocument();
+  });
+
+  test('muestra filas alternadas y un botón + info por fila', async () => {
+    searchResults = [
+      { codigoPersona: 1, dni: 111, nombre: 'A', apellido: 'B', celular: 1 },
+      { codigoPersona: 2, dni: 222, nombre: 'C', apellido: 'D', celular: 2 },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.type(screen.getByLabelText('Buscar clientes'), 'abcd');
+
+    const rows = await screen.findAllByTestId('cliente-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].style.backgroundColor).toContain('244');
+    expect(rows[1].style.backgroundColor).toContain('180');
+    expect(screen.getAllByRole('button', { name: '+ info' })).toHaveLength(2);
+  });
+
+  test('el botón + info navega a la información del cliente', async () => {
+    searchResults = [
+      { codigoPersona: 5, dni: 28853432, nombre: 'JUAN', apellido: 'alvarez', celular: 28853432 },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.type(screen.getByLabelText('Buscar clientes'), 'juan');
+    await user.click(await screen.findByRole('button', { name: '+ info' }));
+
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+  });
+
+  test('el botón + CLIENTE navega a Nuevo Cliente', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.click(screen.getByRole('button', { name: '+ CLIENTE' }));
+
+    expect(await screen.findByText('NUEVO CLIENTE PAGE')).toBeInTheDocument();
+  });
+
+  test('Volver navega al home', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.click(screen.getByRole('button', { name: '←' }));
+
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument();
+  });
+
+  test('el ícono de usuario abre el popup y CERRAR SESION navega al login', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.click(screen.getByRole('button', { name: /usuario/i }));
+    await user.click(screen.getByRole('button', { name: 'CERRAR SESION' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/auth/logout',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('la X cierra el popup sin cerrar sesión', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar clientes');
+
+    await user.click(screen.getByRole('button', { name: /usuario/i }));
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('button', { name: 'CERRAR SESION' })).not.toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/ClientesPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/DashboardPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import AppHeader from '../components/AppHeader.jsx';
+import LavadoInfoPopup from '../components/LavadoInfoPopup.jsx';
+import { fetchSession } from '../services/authService.js';
+import { listClientesSinLavados } from '../services/clientService.js';
+import { listEstadosLavado, listLavados } from '../services/lavadoService.js';
+
+function normalizar(texto) {
+  return String(texto ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+function fechaLocalHoy() {
+  const hoy = new Date();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${hoy.getFullYear()}-${mes}-${dia}`;
+}
+
+const HOY = fechaLocalHoy();
+
+const campoBase = 'w-32 rounded-md px-2 py-1 text-sm text-brand-navy outline-none';
+
+function Campo({ etiqueta, valor }) {
+  return (
+    <label className="flex items-center gap-2">
+      <span className="text-sm font-bold text-white">{etiqueta}</span>
+      <input
+        readOnly
+        aria-label={etiqueta}
+        value={valor ?? ''}
+        className={`${campoBase} bg-brand-pink`}
+      />
+    </label>
+  );
+}
+
+export default function DashboardPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [checking, setChecking] = useState(true);
+  const [lavados, setLavados] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [infoLavado, setInfoLavado] = useState(null);
+
+  const modo = searchParams.get('modo');
+  const desde = searchParams.get('desde') ?? '';
+  const hasta = searchParams.get('hasta') ?? '';
+  const fecha = searchParams.get('fecha') ?? '';
+
+  const habilitadoLavados = modo === 'lavados';
+  const habilitadoClientes = modo === 'clientes';
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        setChecking(false);
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (checking) {
+      return undefined;
+    }
+
+    let active = true;
+
+    async function cargar() {
+      if (modo === 'lavados' && desde && hasta) {
+        const estados = await listEstadosLavado();
+        const entregado = estados.find(
+          (estado) => normalizar(estado.descripcionEstado) === 'entregado',
+        );
+        const lista = entregado
+          ? await listLavados({ estado: entregado.codigoEstado, desde, hasta })
+          : [];
+        if (active) {
+          setLavados(lista);
+          setClientes([]);
+        }
+      } else if (modo === 'clientes' && fecha) {
+        const lista = await listClientesSinLavados(fecha);
+        if (active) {
+          setClientes(lista);
+          setLavados([]);
+        }
+      }
+    }
+
+    cargar();
+
+    return () => {
+      active = false;
+    };
+  }, [checking, modo, desde, hasta, fecha]);
+
+  function seleccionarModo(nuevoModo) {
+    setLavados([]);
+    setClientes([]);
+    setInfoLavado(null);
+    setSearchParams({ modo: nuevoModo });
+  }
+
+  function cambiarFecha(campo, valor) {
+    const siguiente = new URLSearchParams(searchParams);
+    if (valor) {
+      siguiente.set(campo, valor);
+    } else {
+      siguiente.delete(campo);
+    }
+    siguiente.set('modo', campo === 'fecha' ? 'clientes' : 'lavados');
+    setSearchParams(siguiente);
+  }
+
+  function abrirCliente(cliente) {
+    navigate(`/clientes/${cliente.codigoPersona}/info`, {
+      state: { from: `/dashboard?${searchParams.toString()}` },
+    });
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <AppHeader />
+
+      <div className="mx-auto mt-2 max-w-5xl rounded-3xl border-3 border-blue-900 p-6">
+        <span className="inline-block rounded-2xl bg-brand-navy px-8 py-3 text-sm font-bold text-white">
+          DASHBOARD
+        </span>
+
+        <div className="mt-4 flex flex-col gap-6 md:flex-row">
+          <aside className="w-full max-w-[220px] rounded-3xl bg-[#eed8d8] p-4">
+            <div className="flex flex-col gap-8">
+              <button
+                type="button"
+                aria-pressed={habilitadoLavados}
+                onClick={() => seleccionarModo('lavados')}
+                className={`rounded-lg py-2 text-sm font-bold text-brand-navy hover:bg-[#7eb93c] ${
+                  habilitadoLavados ? 'bg-[#7eb93c]' : 'bg-[#eed8d8]'
+                }`}
+              >
+                REGISTRO LAVADOS
+              </button>
+              <button
+                type="button"
+                aria-pressed={habilitadoClientes}
+                onClick={() => seleccionarModo('clientes')}
+                className={`rounded-lg py-2 text-sm font-bold text-brand-navy hover:bg-[#7eb93c] ${
+                  habilitadoClientes ? 'bg-[#7eb93c]' : 'bg-[#eed8d8]'
+                }`}
+              >
+                REGISTRO CLIENTES
+              </button>
+            </div>
+          </aside>
+
+          <div className="flex-1 space-y-6">
+            <fieldset disabled={!habilitadoLavados}>
+              <div
+                className={`flex flex-wrap items-center gap-4 rounded-full px-5 py-2 ${
+                  habilitadoLavados ? 'bg-[#7eb93c]' : 'bg-[#8f8a8a]'
+                }`}
+              >
+                <span className="text-sm font-bold text-white">Registro de Lavados...</span>
+                <label className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">Desde...</span>
+                  <input
+                    type="date"
+                    aria-label="Desde..."
+                    value={desde}
+                    max={HOY}
+                    onChange={(event) => cambiarFecha('desde', event.target.value)}
+                    className={`${campoBase} ${
+                      habilitadoLavados ? 'bg-brand-pink' : 'bg-[#8f8a8a]'
+                    }`}
+                  />
+                </label>
+                <label className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">Hasta...</span>
+                  <input
+                    type="date"
+                    aria-label="Hasta..."
+                    value={hasta}
+                    min={desde || undefined}
+                    max={HOY}
+                    onChange={(event) => cambiarFecha('hasta', event.target.value)}
+                    className={`${campoBase} ${
+                      habilitadoLavados ? 'bg-brand-pink' : 'bg-[#8f8a8a]'
+                    }`}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {lavados.map((lavado) => (
+                  <div
+                    key={lavado.codigoLavado}
+                    className={`flex flex-wrap items-center gap-4 rounded-2xl p-4 ${
+                      habilitadoLavados ? 'bg-[#2637a2]' : 'bg-[#8f8a8a]'
+                    }`}
+                  >
+                    <Campo etiqueta="N° Lavado" valor={lavado.codigoLavado} />
+                    <Campo etiqueta="Categoria" valor={lavado.categoria?.descripcionLavado} />
+                    <Campo etiqueta="Patente" valor={lavado.vehiculo?.patenteVehi} />
+                    <button
+                      type="button"
+                      onClick={() => setInfoLavado(lavado)}
+                      className="ml-auto rounded-full bg-brand-green px-4 py-1 text-sm font-bold text-white"
+                    >
+                      + info
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset disabled={!habilitadoClientes}>
+              <div
+                className={`flex flex-wrap items-center gap-4 rounded-full px-5 py-2 ${
+                  habilitadoClientes ? 'bg-[#cc0000]' : 'bg-[#8f8a8a]'
+                }`}
+              >
+                <span className="text-sm font-bold text-white">
+                  Clientes que NO vuelven desde...
+                </span>
+                <label className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">Seleccione...</span>
+                  <input
+                    type="date"
+                    aria-label="Seleccione..."
+                    value={fecha}
+                    max={HOY}
+                    onChange={(event) => cambiarFecha('fecha', event.target.value)}
+                    className={`${campoBase} ${
+                      habilitadoClientes ? 'bg-brand-pink' : 'bg-[#8f8a8a]'
+                    }`}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {clientes.map((cliente) => (
+                  <div
+                    key={cliente.codigoPersona}
+                    className={`flex flex-wrap items-center gap-4 rounded-2xl p-4 ${
+                      habilitadoClientes ? 'bg-[#2637a2]' : 'bg-[#8f8a8a]'
+                    }`}
+                  >
+                    <Campo etiqueta="Nombre" valor={cliente.nombre} />
+                    <Campo etiqueta="Apellido" valor={cliente.apellido} />
+                    <Campo etiqueta="Celular" valor={cliente.celular} />
+                    <button
+                      type="button"
+                      onClick={() => abrirCliente(cliente)}
+                      className="ml-auto rounded-full bg-brand-green px-4 py-1 text-sm font-bold text-white"
+                    >
+                      + info
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={() => navigate('/home')}
+            className="rounded-full bg-green-600 px-8 py-2 font-bold text-white"
+          >
+            ← Volver
+          </button>
+        </div>
+      </div>
+
+      {infoLavado ? (
+        <LavadoInfoPopup lavado={infoLavado} onClose={() => setInfoLavado(null)} />
+      ) : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/DashboardPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/DashboardPage.test.jsx =====
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import DashboardPage from './DashboardPage.jsx';
+
+const ESTADOS = [{ codigoEstado: 4, descripcionEstado: 'Entregado' }];
+
+let sessionOk = true;
+let lavados = [];
+let clientes = [];
+let lavadoQuery = null;
+let clienteQuery = null;
+
+function data(value) {
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: value }) });
+}
+
+function mockFetch(url) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({
+      ok: sessionOk,
+      status: sessionOk ? 200 : 401,
+      json: () => Promise.resolve({ data: sessionOk ? { codigoLogin: 1 } : null }),
+    });
+  }
+  if (url === '/api/estados-lavado') {
+    return data(ESTADOS);
+  }
+  if (typeof url === 'string' && url.startsWith('/api/lavados')) {
+    lavadoQuery = url;
+    return data(lavados);
+  }
+  if (typeof url === 'string' && url.startsWith('/api/clientes?sinLavadosDesde=')) {
+    clienteQuery = url;
+    return data(clientes);
+  }
+  return data([]);
+}
+
+function ClienteInfoStub() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  return (
+    <div>
+      <p>CLIENTE INFO STUB</p>
+      <p>{location.state?.from ?? 'SIN ORIGEN'}</p>
+      <button
+        type="button"
+        onClick={() => navigate(location.state?.from ?? '/clientes')}
+      >
+        Volver
+      </button>
+    </div>
+  );
+}
+
+function renderPage(initial = '/dashboard') {
+  return render(
+    <MemoryRouter initialEntries={[initial]}>
+      <Routes>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/home" element={<div>HOME PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/clientes/:id/info" element={<ClienteInfoStub />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  lavadoQuery = null;
+  clienteQuery = null;
+  lavados = [
+    {
+      codigoLavado: 12,
+      categoria: { descripcionLavado: 'Completo' },
+      vehiculo: {
+        patenteVehi: 'AB-123-CD',
+        modelo: { modeloVehi: 'Corsa', marca: { marcaVehi: 'Chevrolet' } },
+        datosCliente: {
+          persona: {
+            dni: 30111222,
+            nombre: 'Ana',
+            apellido: 'Perez',
+            celular: '1155512345',
+            email: 'ana@correo.com',
+          },
+        },
+      },
+    },
+  ];
+  clientes = [{ codigoPersona: 5, nombre: 'Ana', apellido: 'Perez', celular: '1155512345' }];
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('DashboardPage', () => {
+  test('muestra la etiqueta DASHBOARD, los dos registros y el boton Volver', async () => {
+    renderPage();
+
+    expect(await screen.findByText('DASHBOARD')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'DASHBOARD' })).not.toBeInTheDocument();
+    expect(screen.getByText('Registro de Lavados...')).toBeInTheDocument();
+    expect(screen.getByText('Clientes que NO vuelven desde...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /volver/i })).toBeInTheDocument();
+  });
+
+  test('sin sesion valida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('el boton Volver navega al home', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /volver/i }));
+
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument();
+  });
+
+  test('al entrar los dos registros estan deshabilitados', async () => {
+    renderPage();
+
+    expect(await screen.findByLabelText('Desde...')).toBeDisabled();
+    expect(screen.getByLabelText('Hasta...')).toBeDisabled();
+    expect(screen.getByLabelText('Seleccione...')).toBeDisabled();
+
+    expect(screen.getByRole('button', { name: 'REGISTRO LAVADOS' }).className).toContain(
+      'bg-[#eed8d8]',
+    );
+    expect(screen.getByRole('button', { name: 'REGISTRO CLIENTES' }).className).toContain(
+      'bg-[#eed8d8]',
+    );
+  });
+
+  test('Registro Lavados habilita su registro y deshabilita el otro', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Desde...');
+
+    await user.click(screen.getByRole('button', { name: 'REGISTRO LAVADOS' }));
+
+    expect(screen.getByLabelText('Desde...')).toBeEnabled();
+    expect(screen.getByLabelText('Hasta...')).toBeEnabled();
+    expect(screen.getByLabelText('Seleccione...')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'REGISTRO LAVADOS' }).className).toContain(
+      'bg-[#7eb93c]',
+    );
+    expect(screen.getByRole('button', { name: 'REGISTRO CLIENTES' }).className).toContain(
+      'bg-[#eed8d8]',
+    );
+  });
+
+  test('Registro Clientes habilita su registro y deshabilita el de lavados', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Desde...');
+
+    await user.click(screen.getByRole('button', { name: 'REGISTRO LAVADOS' }));
+    await user.click(screen.getByRole('button', { name: 'REGISTRO CLIENTES' }));
+
+    expect(screen.getByLabelText('Seleccione...')).toBeEnabled();
+    expect(screen.getByLabelText('Desde...')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'REGISTRO CLIENTES' }).className).toContain(
+      'bg-[#7eb93c]',
+    );
+  });
+
+  test('elegir Desde y Hasta consulta los lavados entregados del rango', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Desde...');
+
+    await user.click(screen.getByRole('button', { name: 'REGISTRO LAVADOS' }));
+
+    const desde = screen.getByLabelText('Desde...');
+    const hasta = screen.getByLabelText('Hasta...');
+    expect(desde).toHaveAttribute('max');
+    expect(hasta).toHaveAttribute('max');
+
+    fireEvent.change(desde, { target: { value: '2026-01-01' } });
+    expect(hasta).toHaveAttribute('min', '2026-01-01');
+
+    fireEvent.change(hasta, { target: { value: '2026-01-31' } });
+
+    expect(await screen.findByDisplayValue('12')).toBeInTheDocument();
+    expect(lavadoQuery).toBe('/api/lavados?estado=4&desde=2026-01-01&hasta=2026-01-31');
+    expect(screen.getByDisplayValue('Completo')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('AB-123-CD')).toBeInTheDocument();
+  });
+
+  test('+info del lavado abre la ventana y Aceptar la cierra conservando resultados', async () => {
+    const user = userEvent.setup();
+    renderPage('/dashboard?modo=lavados&desde=2026-01-01&hasta=2026-01-31');
+    await screen.findByDisplayValue('12');
+
+    await user.click(screen.getByRole('button', { name: '+ info' }));
+
+    const dialogo = screen.getByRole('dialog');
+    expect(within(dialogo).getByText('Chevrolet')).toBeInTheDocument();
+    expect(within(dialogo).getByText('ana@correo.com')).toBeInTheDocument();
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Aceptar' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('12')).toBeInTheDocument();
+  });
+
+  test('elegir la fecha de clientes consulta los que no vuelven', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Seleccione...');
+
+    await user.click(screen.getByRole('button', { name: 'REGISTRO CLIENTES' }));
+
+    const fecha = screen.getByLabelText('Seleccione...');
+    expect(fecha).toHaveAttribute('max');
+
+    fireEvent.change(fecha, { target: { value: '2026-05-01' } });
+
+    expect(await screen.findByDisplayValue('Ana')).toBeInTheDocument();
+    expect(clienteQuery).toBe('/api/clientes?sinLavadosDesde=2026-05-01');
+    expect(screen.getByDisplayValue('Perez')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('1155512345')).toBeInTheDocument();
+  });
+
+  test('+info del cliente abre su informacion y Volver restaura la busqueda', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Seleccione...');
+
+    await user.click(screen.getByRole('button', { name: 'REGISTRO CLIENTES' }));
+    fireEvent.change(screen.getByLabelText('Seleccione...'), {
+      target: { value: '2026-05-01' },
+    });
+    await screen.findByDisplayValue('Ana');
+
+    await user.click(screen.getByRole('button', { name: '+ info' }));
+
+    expect(await screen.findByText('CLIENTE INFO STUB')).toBeInTheDocument();
+    expect(screen.getByText('/dashboard?modo=clientes&fecha=2026-05-01')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Volver' }));
+
+    expect(await screen.findByDisplayValue('Ana')).toBeInTheDocument();
+    expect(clienteQuery).toBe('/api/clientes?sinLavadosDesde=2026-05-01');
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/DashboardPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/EditarClientePage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import userIcon from '../assets/usuario.png';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import { getCliente, searchClientes, updateCliente } from '../services/clientService.js';
+import { isValidEmail, onlyDigits, onlyLetters } from '../utils/validators.js';
+
+const EMPTY_FORM = { dni: '', nombre: '', apellido: '', celular: '', email: '' };
+
+function toForm(cliente) {
+  return {
+    dni: cliente?.dni != null ? String(cliente.dni) : '',
+    nombre: cliente?.nombre || '',
+    apellido: cliente?.apellido || '',
+    celular: cliente?.celular != null ? String(cliente.celular) : '',
+    email: cliente?.email || '',
+  };
+}
+
+export default function EditarClientePage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [original, setOriginal] = useState(EMPTY_FORM);
+  const [warning, setWarning] = useState('');
+  const [popup, setPopup] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        getCliente(id).then((cliente) => {
+          if (!active) {
+            return;
+          }
+          const datos = toForm(cliente);
+          setOriginal(datos);
+          setForm(datos);
+          setChecking(false);
+        });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, navigate]);
+
+  function updateField(name, value) {
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setWarning('');
+
+    const incompleto = Object.values(form).some((value) => !String(value).trim());
+    if (incompleto) {
+      setWarning('Todos los campos son obligatorios.');
+      return;
+    }
+
+    if (!isValidEmail(form.email)) {
+      setWarning('El e-mail no tiene un formato válido.');
+      return;
+    }
+
+    const dni = String(form.dni).trim();
+    const existentes = await searchClientes(dni);
+    const duplicado = existentes.some(
+      (cliente) => String(cliente.dni) === dni && String(cliente.codigoPersona) !== String(id),
+    );
+
+    if (duplicado) {
+      setPopup({ message: 'Ese cliente ya se encuentra registrado.', action: 'reset' });
+      return;
+    }
+
+    try {
+      await updateCliente(id, {
+        nombre: form.nombre,
+        apellido: form.apellido,
+        dni: form.dni,
+        email: form.email,
+        celular: form.celular,
+      });
+      setPopup({ message: 'La edición de datos se efectuó satisfactoriamente.', action: 'info' });
+    } catch {
+      setWarning('No se pudo guardar la edición.');
+    }
+  }
+
+  function handlePopupClose() {
+    const action = popup?.action;
+    setPopup(null);
+    if (action === 'reset') {
+      setForm(original);
+    } else if (action === 'info') {
+      navigate(`/clientes/${id}/info`);
+    }
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  const inputClass = 'mt-1 w-full rounded-full bg-brand-input px-4 py-2 text-white outline-none';
+  const labelClass = 'block text-sm font-bold text-white';
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-brand-indigo p-6">
+      <div className="w-full max-w-md rounded-3xl bg-brand-pink p-6">
+        <h1 className="text-2xl font-extrabold text-[#7eb93c]">Editar Cliente</h1>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="mt-4 rounded-2xl bg-brand-indigo p-4">
+            <div className="mb-3 flex justify-center">
+              <img src={userIcon} alt="Usuario" className="h-12 w-12" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="dni" className={labelClass}>
+                  DNI
+                </label>
+                <input
+                  id="dni"
+                  name="dni"
+                  type="text"
+                  value={form.dni}
+                  onChange={(event) => updateField('dni', onlyDigits(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="nombre" className={labelClass}>
+                  Nombre
+                </label>
+                <input
+                  id="nombre"
+                  name="nombre"
+                  type="text"
+                  value={form.nombre}
+                  onChange={(event) => updateField('nombre', onlyLetters(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="apellido" className={labelClass}>
+                  Apellido
+                </label>
+                <input
+                  id="apellido"
+                  name="apellido"
+                  type="text"
+                  value={form.apellido}
+                  onChange={(event) => updateField('apellido', onlyLetters(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="celular" className={labelClass}>
+                  Celular
+                </label>
+                <input
+                  id="celular"
+                  name="celular"
+                  type="text"
+                  value={form.celular}
+                  onChange={(event) => updateField('celular', onlyDigits(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className={labelClass}>
+                  e-m@il
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="text"
+                  value={form.email}
+                  onChange={(event) => updateField('email', event.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {warning ? (
+            <p role="alert" className="mt-3 text-sm font-bold text-red-700">
+              {warning}
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex justify-center gap-6">
+            <button
+              type="submit"
+              className="rounded-full bg-[#7eb93c] px-8 py-2 font-bold text-white"
+            >
+              Registrar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/clientes/${id}/info`)}
+              className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {popup ? <Popup message={popup.message} onClose={handlePopupClose} /> : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/EditarClientePage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/EditarClientePage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import EditarClientePage from './EditarClientePage.jsx';
+import ClienteInfoPage from './ClienteInfoPage.jsx';
+
+let sessionOk = true;
+let searchDuplicado = [];
+let clienteActual = {
+  codigoPersona: 5,
+  dni: 28853432,
+  nombre: 'Juan',
+  apellido: 'Perez',
+  celular: 555,
+  email: 'juan@gmail.com',
+};
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/clientes/5' && options.method === 'PUT') {
+    clienteActual = { ...clienteActual, ...JSON.parse(options.body) };
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: clienteActual }) });
+  }
+  if (url === '/api/clientes/5') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: clienteActual }) });
+  }
+  if (typeof url === 'string' && url.startsWith('/api/clientes?buscar=')) {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: searchDuplicado }) });
+  }
+  if (url === '/api/vehiculos?cliente=5') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+}
+
+function renderPage({ realInfo = false } = {}) {
+  return render(
+    <MemoryRouter initialEntries={['/clientes/5/editar']}>
+      <Routes>
+        <Route path="/clientes/:id/editar" element={<EditarClientePage />} />
+        <Route
+          path="/clientes/:id/info"
+          element={realInfo ? <ClienteInfoPage /> : <div>INFO PAGE</div>}
+        />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  searchDuplicado = [];
+  clienteActual = {
+    codigoPersona: 5,
+    dni: 28853432,
+    nombre: 'Juan',
+    apellido: 'Perez',
+    celular: 555,
+    email: 'juan@gmail.com',
+  };
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('EditarClientePage', () => {
+  test('precarga los datos del cliente en el formulario', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Editar Cliente')).toBeInTheDocument();
+    expect(screen.getByLabelText('DNI')).toHaveValue('28853432');
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Juan');
+    expect(screen.getByLabelText('Apellido')).toHaveValue('Perez');
+    expect(screen.getByLabelText('Celular')).toHaveValue('555');
+    expect(screen.getByLabelText('e-m@il')).toHaveValue('juan@gmail.com');
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('mantiene los tipos de datos (solo números)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Cliente');
+
+    await user.clear(screen.getByLabelText('DNI'));
+    await user.type(screen.getByLabelText('DNI'), '12a3');
+
+    expect(screen.getByLabelText('DNI')).toHaveValue('123');
+  });
+
+  test('con e-mail inválido advierte y no guarda', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Cliente');
+
+    await user.clear(screen.getByLabelText('e-m@il'));
+    await user.type(screen.getByLabelText('e-m@il'), 'juan@');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('El e-mail no tiene un formato válido.');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/clientes/5',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  test('Registrar guarda, muestra el popup y vuelve a la información', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Cliente');
+
+    await user.clear(screen.getByLabelText('Nombre'));
+    await user.type(screen.getByLabelText('Nombre'), 'Editado');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(
+      await screen.findByText('La edición de datos se efectuó satisfactoriamente.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(await screen.findByText('INFO PAGE')).toBeInTheDocument();
+  });
+
+  test('Cancelar vuelve a la información sin guardar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Cliente');
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByText('INFO PAGE')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/clientes/5',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  test('con el dni de otro cliente muestra el popup y restablece los datos originales', async () => {
+    searchDuplicado = [{ codigoPersona: 99, dni: 28853432 }];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Cliente');
+
+    await user.clear(screen.getByLabelText('Nombre'));
+    await user.type(screen.getByLabelText('Nombre'), 'Otro');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Ese cliente ya se encuentra registrado.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Juan');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/clientes/5',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  test('tras editar y volver, la información muestra los datos actualizados', async () => {
+    const user = userEvent.setup();
+    renderPage({ realInfo: true });
+    await screen.findByText('Editar Cliente');
+
+    await user.clear(screen.getByLabelText('Nombre'));
+    await user.type(screen.getByLabelText('Nombre'), 'Editado');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+    await screen.findByText('La edición de datos se efectuó satisfactoriamente.');
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(await screen.findByText('Editado')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/EditarClientePage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/EditarLavadoPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import BrandHeader from '../components/BrandHeader.jsx';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import {
+  getLavado,
+  listCategoriasLavado,
+  listEstadosLavado,
+  listUtileria,
+  updateLavado,
+  updateUtileria,
+} from '../services/lavadoService.js';
+
+function codigo(valor) {
+  return String(valor);
+}
+
+export default function EditarLavadoPage() {
+  const { lavadoId } = useParams();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [lavado, setLavado] = useState(null);
+  const [utilerias, setUtilerias] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [seleccion, setSeleccion] = useState([]);
+  const [categoria, setCategoria] = useState('');
+  const [estado, setEstado] = useState('');
+  const [detalles, setDetalles] = useState('');
+  const [warning, setWarning] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+
+        Promise.all([
+          getLavado(lavadoId),
+          listUtileria(),
+          listCategoriasLavado(),
+          listEstadosLavado(),
+        ])
+          .then(([datosLavado, listaUtileria, listaCategorias, listaEstados]) => {
+            if (!active) {
+              return;
+            }
+            if (!datosLavado) {
+              navigate('/lavados', { replace: true });
+              return;
+            }
+            setLavado(datosLavado);
+            setUtilerias(listaUtileria);
+            setCategorias(listaCategorias);
+            setEstados(listaEstados);
+            setSeleccion(
+              listaUtileria
+                .filter((utileria) => Boolean(utileria.estadoUtileria))
+                .map((utileria) => codigo(utileria.codigoUtileria)),
+            );
+            setCategoria(codigo(datosLavado.categoriaLavado));
+            setEstado(codigo(datosLavado.estado));
+            setDetalles(datosLavado.detallesLavado ?? '');
+            setChecking(false);
+          })
+          .catch(() => {
+            if (active) {
+              navigate('/lavados', { replace: true });
+            }
+          });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [lavadoId, navigate]);
+
+  async function toggleUtileria(codigoUtileria) {
+    const activa = seleccion.includes(codigoUtileria);
+    const nuevoEstado = !activa;
+
+    try {
+      await updateUtileria(codigoUtileria, { estadoUtileria: nuevoEstado });
+      setSeleccion((prev) =>
+        nuevoEstado ? [...prev, codigoUtileria] : prev.filter((item) => item !== codigoUtileria),
+      );
+      setWarning('');
+    } catch {
+      setWarning('No se pudo actualizar la utileria.');
+    }
+  }
+
+  async function handleRegistrar() {
+    try {
+      await updateLavado(lavadoId, {
+        categoriaLavado: categoria,
+        estado,
+        utileria: seleccion[0],
+        detallesLavado: detalles,
+      });
+      setShowSuccess(true);
+    } catch {
+      setWarning('No se pudo editar el lavado.');
+    }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    setWarning('');
+
+    if (!categoria) {
+      setWarning('Seleccione una categoria.');
+      return;
+    }
+    if (!estado) {
+      setWarning('Seleccione un estado.');
+      return;
+    }
+    if (seleccion.length === 0) {
+      setWarning('Seleccione al menos una utileria.');
+      return;
+    }
+
+    handleRegistrar();
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  const labelClass = 'block text-sm font-bold text-white';
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <BrandHeader />
+
+      <div className="mx-auto mt-2 max-w-3xl rounded-3xl border-3 border-blue-900 bg-[#8f8a8a] p-6">
+        <h1 className="text-xl font-bold text-brand-navy">
+          Editar Lavado: <span className="font-extrabold">{lavado?.vehiculo?.patenteVehi}</span>
+        </h1>
+
+        <form onSubmit={handleSubmit} className="mt-4 rounded-2xl bg-[#2637a2] p-6">
+          <div className="flex flex-wrap gap-8">
+            <div className="flex-1 space-y-3">
+              {utilerias.map((utileria) => {
+                const valor = codigo(utileria.codigoUtileria);
+                return (
+                  <label
+                    key={valor}
+                    className="flex items-center gap-3 text-sm font-bold text-white"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={seleccion.includes(valor)}
+                      onChange={() => toggleUtileria(valor)}
+                      className="h-5 w-5"
+                    />
+                    {utileria.descripcionUtileria}
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex-1 space-y-3">
+              {categorias.map((item) => {
+                const valor = codigo(item.codigoCategoriaLavado);
+                const activa = categoria === valor;
+                return (
+                  <div
+                    key={valor}
+                    className="flex items-center justify-between gap-3 text-sm font-bold text-white"
+                  >
+                    <span>{item.descripcionLavado}</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={activa}
+                      aria-label={item.descripcionLavado}
+                      onClick={() => setCategoria(valor)}
+                      className={`h-6 w-12 rounded-full p-1 transition-colors ${
+                        activa ? 'bg-green-600' : 'bg-red-600'
+                      }`}
+                    >
+                      <span
+                        className={`block h-4 w-4 rounded-full bg-white transition-transform ${
+                          activa ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label htmlFor="detalles" className={labelClass}>
+              Detalles
+            </label>
+            <textarea
+              id="detalles"
+              value={detalles}
+              onChange={(event) => setDetalles(event.target.value)}
+              placeholder="Detalles..."
+              rows={3}
+              className="mt-1 w-full rounded-2xl bg-brand-input px-4 py-2 text-white outline-none"
+            />
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <div className="flex items-center gap-3 rounded-xl border border-white px-4 py-2">
+              <label htmlFor="estado" className={labelClass}>
+                Estado...
+              </label>
+              <select
+                id="estado"
+                value={estado}
+                onChange={(event) => setEstado(event.target.value)}
+                className="rounded-md bg-white px-3 py-1 text-brand-navy outline-none"
+              >
+                <option value="">Seleccionar...</option>
+                {estados.map((item) => (
+                  <option key={item.codigoEstado} value={item.codigoEstado}>
+                    {item.descripcionEstado}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {warning ? (
+            <p role="alert" className="mt-3 text-center text-sm font-bold text-red-700">
+              {warning}
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex justify-center gap-6">
+            <button
+              type="submit"
+              className="rounded-full bg-green-600 px-8 py-2 font-bold text-white"
+            >
+              Registrar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/lavados')}
+              className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {showSuccess ? (
+        <Popup message="Lavado editado exitosamente" onClose={() => navigate('/lavados')} />
+      ) : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/EditarLavadoPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/EditarLavadoPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import EditarLavadoPage from './EditarLavadoPage.jsx';
+
+const ESTADOS = [
+  { codigoEstado: 1, descripcionEstado: 'En Espera' },
+  { codigoEstado: 2, descripcionEstado: 'Lavando' },
+  { codigoEstado: 3, descripcionEstado: 'Terminado' },
+  { codigoEstado: 4, descripcionEstado: 'Entregado' },
+];
+
+let sessionOk = true;
+let lavado = null;
+let utilerias = [];
+let categorias = [];
+let putLavadoBody = null;
+let putLavadoOk = true;
+
+function data(value) {
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: value }) });
+}
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({
+      ok: sessionOk,
+      status: sessionOk ? 200 : 401,
+      json: () => Promise.resolve({ data: sessionOk ? { codigoLogin: 1 } : null }),
+    });
+  }
+  if (url === '/api/lavados/7' && options.method === 'PUT') {
+    putLavadoBody = JSON.parse(options.body);
+    return putLavadoOk
+      ? data({ codigoLavado: 7 })
+      : Promise.resolve({ ok: false, status: 400, json: () => Promise.resolve({}) });
+  }
+  if (url === '/api/lavados/7') {
+    return lavado
+      ? data(lavado)
+      : Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({ data: null }) });
+  }
+  if (url === '/api/utilerias') {
+    return data(utilerias);
+  }
+  if (url === '/api/categorias-lavado') {
+    return data(categorias);
+  }
+  if (url === '/api/estados-lavado') {
+    return data(ESTADOS);
+  }
+  if (typeof url === 'string' && url.startsWith('/api/utilerias/')) {
+    return data({ estadoUtileria: true });
+  }
+  return data([]);
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/lavados/7/editar']}>
+      <Routes>
+        <Route path="/lavados/:lavadoId/editar" element={<EditarLavadoPage />} />
+        <Route path="/lavados" element={<div>LAVADOS PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  putLavadoBody = null;
+  putLavadoOk = true;
+  lavado = {
+    codigoLavado: 7,
+    categoriaLavado: 10,
+    estado: 1,
+    detallesLavado: 'Lavado inicial',
+    vehiculo: { patenteVehi: 'AC-125-BF' },
+  };
+  utilerias = [
+    { codigoUtileria: 1, descripcionUtileria: 'Auxilio', estadoUtileria: true },
+    { codigoUtileria: 2, descripcionUtileria: 'Balizas', estadoUtileria: false },
+  ];
+  categorias = [
+    { codigoCategoriaLavado: 10, descripcionLavado: 'Basico' },
+    { codigoCategoriaLavado: 11, descripcionLavado: 'Completo' },
+  ];
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('EditarLavadoPage', () => {
+  test('muestra el titulo con la patente y precarga los datos del lavado', async () => {
+    renderPage();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Estado...')).toHaveValue('1');
+    expect(screen.getByLabelText('Detalles')).toHaveValue('Lavado inicial');
+    expect(screen.getByRole('checkbox', { name: 'Auxilio' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Balizas' })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('switch', { name: 'Completo' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  test('sin sesion valida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('un lavado inexistente vuelve a la pagina de Lavados', async () => {
+    lavado = null;
+    renderPage();
+
+    expect(await screen.findByText('LAVADOS PAGE')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Registrar' })).not.toBeInTheDocument();
+  });
+
+  test('tildar una utileria actualiza su estado', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('checkbox', { name: 'Balizas' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/utilerias/2',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+    expect(screen.getByRole('checkbox', { name: 'Balizas' })).toBeChecked();
+  });
+
+  test('destildar una utileria actualiza su estado', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/utilerias/1',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+    expect(screen.getByRole('checkbox', { name: 'Auxilio' })).not.toBeChecked();
+  });
+
+  test('solo un toggle de categoria queda encendido', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('switch', { name: 'Completo' }));
+
+    expect(screen.getByRole('switch', { name: 'Completo' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  test('edita el campo Detalles', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    const detalles = screen.getByLabelText('Detalles');
+    await user.clear(detalles);
+    await user.type(detalles, 'Actualizado');
+
+    expect(detalles).toHaveValue('Actualizado');
+  });
+
+  test('el combobox ofrece todos los estados y permite cambiarlo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    const combo = screen.getByLabelText('Estado...');
+    expect(combo.querySelectorAll('option')).toHaveLength(5);
+
+    await user.selectOptions(combo, '3');
+
+    expect(combo).toHaveValue('3');
+  });
+
+  test('Registrar guarda los cambios y muestra el popup de exito', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    const detalles = screen.getByLabelText('Detalles');
+    await user.clear(detalles);
+    await user.type(detalles, 'Actualizado');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Lavado editado exitosamente')).toBeInTheDocument();
+    expect(putLavadoBody).toEqual({
+      categoriaLavado: '10',
+      estado: '1',
+      utileria: '1',
+      detallesLavado: 'Actualizado',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(await screen.findByText('LAVADOS PAGE')).toBeInTheDocument();
+  });
+
+  test('Registrar exige al menos una utileria', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Seleccione al menos una utileria.');
+    expect(putLavadoBody).toBeNull();
+  });
+
+  test('un error al guardar permanece en la pagina sin popup de exito', async () => {
+    const user = userEvent.setup();
+    putLavadoOk = false;
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo editar el lavado.');
+    expect(screen.queryByText('Lavado editado exitosamente')).not.toBeInTheDocument();
+  });
+
+  test('Cancelar vuelve a la lista sin guardar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByText('LAVADOS PAGE')).toBeInTheDocument();
+    expect(putLavadoBody).toBeNull();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/EditarLavadoPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/EditarVehiculoPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import autoIcon from '../assets/auto.png';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import {
+  getVehiculo,
+  listCategorias,
+  listMarcas,
+  listModelos,
+  listVehiculos,
+  updateVehiculo,
+} from '../services/vehicleService.js';
+import { formatPatente, isValidPatente } from '../utils/validators.js';
+
+const EMPTY_FORM = {
+  categoria: '',
+  marca: '',
+  modelo: '',
+  patente: '',
+};
+
+function toForm(vehiculo) {
+  return {
+    categoria: String(vehiculo?.modelo?.marca?.categoria?.codigoCategoriaVehi ?? ''),
+    marca: String(vehiculo?.modelo?.marca?.codigoMarcaVehi ?? ''),
+    modelo: String(vehiculo?.modelo?.codigoModeloVehi ?? ''),
+    patente: vehiculo?.patenteVehi || '',
+  };
+}
+
+export default function EditarVehiculoPage() {
+  const { id, vehiculoId } = useParams();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [original, setOriginal] = useState(EMPTY_FORM);
+  const [categorias, setCategorias] = useState([]);
+  const [marcas, setMarcas] = useState([]);
+  const [modelos, setModelos] = useState([]);
+  const [warning, setWarning] = useState('');
+  const [popup, setPopup] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        getVehiculo(vehiculoId).then((vehiculo) => {
+          if (!active) {
+            return;
+          }
+          const datos = toForm(vehiculo);
+          setOriginal(datos);
+          setForm(datos);
+          setChecking(false);
+        });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [vehiculoId, navigate]);
+
+  useEffect(() => {
+    listCategorias().then(setCategorias);
+    listMarcas().then(setMarcas);
+    listModelos().then(setModelos);
+  }, []);
+
+  function updateField(name, value) {
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'categoria') {
+        next.marca = '';
+        next.modelo = '';
+      }
+      if (name === 'marca') {
+        next.modelo = '';
+      }
+      return next;
+    });
+  }
+
+  const marcasFiltradas = marcas.filter(
+    (marca) => String(marca.categoriaVehi) === String(form.categoria),
+  );
+  const modelosFiltrados = modelos.filter(
+    (modelo) => String(modelo.marcaVehi) === String(form.marca),
+  );
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setWarning('');
+
+    const incompleto = Object.values(form).some((value) => !String(value).trim());
+    if (incompleto) {
+      setWarning('Todos los campos son obligatorios.');
+      return;
+    }
+
+    if (!isValidPatente(form.patente)) {
+      setWarning('La patente debe tener el formato AA-123-AA.');
+      return;
+    }
+
+    const patente = form.patente.trim().toUpperCase();
+    const existentes = await listVehiculos();
+    const duplicado = existentes.some(
+      (vehiculo) =>
+        String(vehiculo.codigoVehi) !== String(vehiculoId) &&
+        String(vehiculo.patenteVehi).trim().toUpperCase() === patente,
+    );
+
+    if (duplicado) {
+      setPopup({ message: 'Error: vehiculo ya registrado', action: 'reset' });
+      return;
+    }
+
+    try {
+      await updateVehiculo(vehiculoId, {
+        patenteVehi: form.patente,
+        estadoVehi: true,
+        cliente: id,
+        modeloVehi: form.modelo,
+      });
+      setPopup({ message: 'El vehiculo se edito correctamente.', action: 'info' });
+    } catch {
+      setWarning('No se pudo guardar la edición.');
+    }
+  }
+
+  function handlePopupClose() {
+    const action = popup?.action;
+    setPopup(null);
+    if (action === 'reset') {
+      setForm(original);
+    } else if (action === 'info') {
+      navigate(`/clientes/${id}/info`);    
+    }
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  const inputClass =
+    'mt-1 w-full rounded-full bg-brand-input px-4 py-2 text-white outline-none';
+  const labelClass = 'block text-sm font-bold text-white';
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-brand-indigo p-6">
+      <div className="w-full max-w-md rounded-3xl bg-brand-pink p-6">
+        <h1 className="text-2xl font-extrabold text-[#7eb93c]">Editar Vehiculo</h1>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="mt-4 rounded-2xl bg-brand-indigo p-4">
+            <div className="mb-3 flex justify-center">
+              <img src={autoIcon} alt="Vehiculo" className="h-10 w-10" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="categoria" className={labelClass}>
+                  Vehiculo
+                </label>
+                <select
+                  id="categoria"
+                  name="categoria"
+                  value={form.categoria}
+                  onChange={(event) => updateField('categoria', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {categorias.map((categoria) => (
+                    <option key={categoria.codigoCategoriaVehi} value={categoria.codigoCategoriaVehi}>
+                      {categoria.categoriaVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="marca" className={labelClass}>
+                  Marca
+                </label>
+                <select
+                  id="marca"
+                  name="marca"
+                  value={form.marca}
+                  onChange={(event) => updateField('marca', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {marcasFiltradas.map((marca) => (
+                    <option key={marca.codigoMarcaVehi} value={marca.codigoMarcaVehi}>
+                      {marca.marcaVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="modelo" className={labelClass}>
+                  Modelo
+                </label>
+                <select
+                  id="modelo"
+                  name="modelo"
+                  value={form.modelo}
+                  onChange={(event) => updateField('modelo', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {modelosFiltrados.map((modelo) => (
+                    <option key={modelo.codigoModeloVehi} value={modelo.codigoModeloVehi}>
+                      {modelo.modeloVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="patente" className={labelClass}>
+                  Patente
+                </label>
+                <input
+                  id="patente"
+                  name="patente"
+                  type="text"
+                  value={form.patente}
+                  onChange={(event) => updateField('patente', formatPatente(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {warning ? (
+            <p role="alert" className="mt-3 text-sm font-bold text-red-700">
+              {warning}
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex justify-center gap-6">
+            <button
+              type="submit"
+              className="rounded-full bg-[#7eb93c] px-8 py-2 font-bold text-white"
+            >
+              Registrar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/clientes/${id}/info`)}  
+              className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {popup ? <Popup message={popup.message} onClose={handlePopupClose} /> : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/EditarVehiculoPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/EditarVehiculoPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import EditarVehiculoPage from './EditarVehiculoPage.jsx';
+
+let sessionOk = true;
+let categorias = [];
+let marcas = [];
+let modelos = [];
+let vehiculos = [];
+let putOk = true;
+let putBody = null;
+let vehiculoActual = null;
+
+function data(value) {
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: value }) });
+}
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/categorias-vehiculo') {
+    return data(categorias);
+  }
+  if (url === '/api/marcas-vehiculo') {
+    return data(marcas);
+  }
+  if (url === '/api/modelos-vehiculo') {
+    return data(modelos);
+  }
+  if (url === '/api/vehiculos/9' && options.method === 'PUT') {
+    putBody = JSON.parse(options.body);
+    return Promise.resolve(
+      putOk
+        ? { ok: true, json: () => Promise.resolve({ data: { ...vehiculoActual, ...putBody } }) }
+        : { ok: false, status: 400 },
+    );
+  }
+  if (url === '/api/vehiculos/9') {
+    return data(vehiculoActual);
+  }
+  if (url === '/api/vehiculos') {
+    return data(vehiculos);
+  }
+  return data([]);
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/clientes/5/vehiculos/9/editar']}>
+      <Routes>
+        <Route path="/clientes/:id/vehiculos/:vehiculoId/editar" element={<EditarVehiculoPage />} />
+        <Route path="/clientes/:id/info" element={<div>INFO PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  categorias = [{ codigoCategoriaVehi: 1, categoriaVehi: 'Sedan' }];
+  marcas = [{ codigoMarcaVehi: 10, marcaVehi: 'Renault', categoriaVehi: 1 }];
+  modelos = [{ codigoModeloVehi: 100, modeloVehi: 'Fuego', marcaVehi: 10 }];
+  vehiculos = [{ codigoVehi: 9, patenteVehi: 'AC-123-DF' }];
+  putOk = true;
+  putBody = null;
+  vehiculoActual = {
+    codigoVehi: 9,
+    patenteVehi: 'AC-123-DF',
+    cliente: 5,
+    modelo: {
+      codigoModeloVehi: 100,
+      modeloVehi: 'Fuego',
+      marca: {
+        codigoMarcaVehi: 10,
+        marcaVehi: 'Renault',
+        categoria: { codigoCategoriaVehi: 1, categoriaVehi: 'Sedan' },
+      },
+    },
+  };
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('EditarVehiculoPage', () => {
+  test('precarga los datos del vehículo', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Editar Vehiculo')).toBeInTheDocument();
+    await screen.findByRole('option', { name: 'Sedan' });
+    expect(screen.getByLabelText('Vehiculo')).toHaveValue('1');
+    expect(screen.getByLabelText('Marca')).toHaveValue('10');
+    expect(screen.getByLabelText('Modelo')).toHaveValue('100');
+    expect(screen.getByLabelText('Patente')).toHaveValue('AC-123-DF');
+    expect(screen.getByRole('button', { name: 'Registrar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('las marcas dependen del vehículo y los modelos de la marca', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+    await screen.findByRole('option', { name: 'Renault' });
+
+    expect(screen.getByRole('option', { name: 'Fuego' })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Vehiculo'), '');
+    expect(screen.queryByRole('option', { name: 'Renault' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Vehiculo'), '1');
+    expect(screen.getByRole('option', { name: 'Renault' })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Marca'), '10');
+    expect(screen.getByRole('option', { name: 'Fuego' })).toBeInTheDocument();
+  });
+
+  test('con patente inválida advierte y no guarda', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+
+    await user.clear(screen.getByLabelText('Patente'));
+    await user.type(screen.getByLabelText('Patente'), 'ab254m');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La patente debe tener el formato AA-123-AA.',
+    );
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos/9',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  test('con patente de otro vehículo muestra el popup y restablece los datos', async () => {
+    vehiculos = [
+      { codigoVehi: 9, patenteVehi: 'AC-123-DF' },
+      { codigoVehi: 1, patenteVehi: 'AB-123-CD' },
+    ];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+
+    await user.clear(screen.getByLabelText('Patente'));
+    await user.type(screen.getByLabelText('Patente'), 'ab123cd');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Error: vehiculo ya registrado')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos/9',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(screen.getByLabelText('Patente')).toHaveValue('AC-123-DF');
+  });
+
+  test('registra la edición, muestra el popup y vuelve a la información', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+
+    await user.clear(screen.getByLabelText('Patente'));
+    await user.type(screen.getByLabelText('Patente'), 'ab123ef');
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(
+      await screen.findByText('El vehiculo se edito correctamente.'),
+    ).toBeInTheDocument();
+    expect(putBody).toEqual({
+      patenteVehi: 'AB-123-EF',
+      estadoVehi: true,
+      cliente: '5',
+      modeloVehi: '100',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+    expect(await screen.findByText('INFO PAGE')).toBeInTheDocument();
+  });
+
+  test('acepta la propia patente sin marcarla como duplicada', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(
+      await screen.findByText('El vehiculo se edito correctamente.'),
+    ).toBeInTheDocument();
+    expect(putBody).toEqual({
+      patenteVehi: 'AC-123-DF',
+      estadoVehi: true,
+      cliente: '5',
+      modeloVehi: '100',
+    });
+  });
+
+  test('ante un error de guardado advierte y no navega', async () => {
+    putOk = false;
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo guardar la edición.');
+    expect(screen.queryByText('INFO PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Cancelar vuelve a la información sin guardar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Editar Vehiculo');
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByText('INFO PAGE')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos/9',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/EditarVehiculoPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/HomePage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AppHeader from '../components/AppHeader.jsx';
+import DateTimePanel from '../components/DateTimePanel.jsx';
+import { fetchSession } from '../services/authService.js';
+
+const ACCESS_BUTTONS = ['CLIENTES', 'LAVADOS', 'VEHICULOS', 'DASHBOARD'];
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  if (checking) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <AppHeader />
+
+      <div className="mx-auto mt-2 max-w-xl rounded-3xl border-4 border-green-700 p-6">
+        <div className="mt-2 flex flex-col gap-6 md:flex-row">
+          <div className="w-full max-w-xs rounded-3xl border-3 border-gray-400 bg-brand-pink p-6">
+            <div className="mt-3 flex flex-col gap-4">
+              {ACCESS_BUTTONS.map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    if (label === 'CLIENTES') {
+                      navigate('/clientes');
+                    } else if (label === 'LAVADOS') {
+                      navigate('/lavados');
+                    } else if (label === 'VEHICULOS') {
+                      navigate('/vehiculos');
+                    } else if (label === 'DASHBOARD') {
+                      navigate('/dashboard');
+                    }
+                  }}
+                  className="rounded-full bg-brand-input px-6 py-2 font-bold text-white hover:bg-[#5ea014]"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <DateTimePanel />
+        </div>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/HomePage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/HomePage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import HomePage from './HomePage.jsx';
+
+function renderHome() {
+  return render(
+    <MemoryRouter initialEntries={['/home']}>
+      <Routes>
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/vehiculos" element={<div>VEHICULOS PAGE</div>} />
+        <Route path="/lavados" element={<div>LAVADOS PAGE</div>} />
+        <Route path="/dashboard" element={<div>DASHBOARD PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('HomePage', () => {
+  test('muestra los 4 botones de acceso y la etiqueta ADMIN', async () => {
+    renderHome();
+
+    expect(await screen.findByRole('button', { name: 'CLIENTES' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'LAVADOS' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'VEHICULOS' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'DASHBOARD' })).toBeInTheDocument();
+    expect(screen.getByText('ADMIN')).toBeInTheDocument();
+  });
+
+  test('los botones de acceso tienen el hover verde #5ea014', async () => {
+    renderHome();
+
+    const boton = await screen.findByRole('button', { name: 'CLIENTES' });
+    expect(boton.className).toContain('hover:bg-[#5ea014]');
+  });
+
+  test('el ícono de usuario abre el popup de cierre de sesión', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await screen.findByRole('button', { name: 'CLIENTES' });
+
+    await user.click(screen.getByRole('button', { name: /usuario/i }));
+
+    expect(screen.getByRole('button', { name: 'CERRAR SESION' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+  });
+
+  test('CERRAR SESION cierra la sesión y navega al login', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await screen.findByRole('button', { name: 'CLIENTES' });
+
+    await user.click(screen.getByRole('button', { name: /usuario/i }));
+    await user.click(screen.getByRole('button', { name: 'CERRAR SESION' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/auth/logout',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('la X cierra el popup sin cerrar sesión', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await screen.findByRole('button', { name: 'CLIENTES' });
+
+    await user.click(screen.getByRole('button', { name: /usuario/i }));
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('button', { name: 'CERRAR SESION' })).not.toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/auth/logout', expect.anything());
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: false, status: 401 });
+    renderHome();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('el botón CLIENTES navega a la página de Clientes', async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(await screen.findByRole('button', { name: 'CLIENTES' }));
+
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('el botón VEHICULOS navega a la página de Vehiculos', async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(await screen.findByRole('button', { name: 'VEHICULOS' }));
+
+    expect(await screen.findByText('VEHICULOS PAGE')).toBeInTheDocument();
+  });
+
+  test('el botón LAVADOS navega a la página de Lavados', async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(await screen.findByRole('button', { name: 'LAVADOS' }));
+
+    expect(await screen.findByText('LAVADOS PAGE')).toBeInTheDocument();
+  });
+
+  test('el botón DASHBOARD navega a la página Dashboard', async () => {
+    const user = userEvent.setup();
+    renderHome();
+
+    await user.click(await screen.findByRole('button', { name: 'DASHBOARD' }));
+
+    expect(await screen.findByText('DASHBOARD PAGE')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/HomePage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/LavadosPage.jsx =====
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import bubblesIcon from '../assets/burbujas.png';
+import BrandHeader from '../components/BrandHeader.jsx';
+import LavadoInfoPopup from '../components/LavadoInfoPopup.jsx';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import { listEstadosLavado, listLavados, updateLavado } from '../services/lavadoService.js';
+import { formatTime } from '../utils/formatDateTime.js';
+
+const SECCIONES = [
+  {
+    id: 'en-espera',
+    titulo: 'En Espera...',
+    estados: ['en espera'],
+    borde: 'border-red-600',
+    etiqueta: 'text-red-700',
+    accion: { etiqueta: 'Lavar', popup: 'Lavando Vehiculo', destino: 'Lavando' },
+  },
+  {
+    id: 'lavando',
+    titulo: 'Lavando...',
+    estados: ['lavando'],
+    borde: 'border-yellow-700',
+    etiqueta: 'text-yellow-700',
+    accion: { etiqueta: 'Completado', popup: 'Lavado Terminado', destino: 'Terminado' },
+  },
+  {
+    id: 'terminado',
+    titulo: 'Terminado...',
+    estados: ['terminado'],
+    borde: 'border-green-600',
+    etiqueta: 'text-green-700',
+    accion: { etiqueta: 'Entregar', popup: 'Vehiculo Entregado', destino: 'Entregado' },
+  },
+];
+
+function normalizar(texto) {
+  return String(texto ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+function formatHora(valor) {
+  if (!valor) {
+    return '';
+  }
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) {
+    return '';
+  }
+  const { hour, minute, period } = formatTime(fecha);
+  return `${hour}:${minute} ${period}`;
+}
+
+function ChevronIcon({ arriba }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={arriba ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
+    </svg>
+  );
+}
+
+function HandIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6" fill="currentColor">
+      <path d="M8.5 12.5V6a1.5 1.5 0 0 1 3 0v4.5H12V5a1.5 1.5 0 0 1 3 0v5.5h.5V7a1.5 1.5 0 0 1 3 0v7.5a6.5 6.5 0 0 1-6.5 6.5h-.5A6.5 6.5 0 0 1 5 14.5v-3a1.5 1.5 0 0 1 3 0v1h.5z" />
+    </svg>
+  );
+}
+
+export default function LavadosPage() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [lavados, setLavados] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [colapsadas, setColapsadas] = useState({});
+  const [info, setInfo] = useState(null);
+  const [avance, setAvance] = useState(null);
+
+  const cargar = useCallback(async () => {
+    const [listaLavados, catalogoEstados] = await Promise.all([
+      listLavados(),
+      listEstadosLavado(),
+    ]);
+    setLavados(listaLavados);
+    setEstados(catalogoEstados);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        cargar()
+          .then(() => {
+            if (active) {
+              setChecking(false);
+            }
+          })
+          .catch(() => {
+            if (active) {
+              setChecking(false);
+            }
+          });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cargar, navigate]);
+
+  async function handleAcceptAvance() {
+    if (!avance) {
+      return;
+    }
+    const { lavado, seccion } = avance;
+    const destino = estados.find(
+      (estado) => normalizar(estado.descripcionEstado) === normalizar(seccion.accion.destino),
+    );
+    setAvance(null);
+
+    if (!destino) {
+      return;
+    }
+
+    await updateLavado(lavado.codigoLavado, { estado: destino.codigoEstado });
+    await cargar();
+  }
+
+  function lavadosDe(seccion) {
+    return lavados.filter((lavado) =>
+      seccion.estados.includes(normalizar(lavado.datosEstado?.descripcionEstado)),
+    );
+  }
+
+  function toggleSeccion(id) {
+    setColapsadas((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <BrandHeader />
+
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={() => navigate('/clientes')}
+          className="animate-nuevo-lavado flex items-center gap-2 rounded-full bg-green-600 px-8 py-2 font-bold text-white hover:[animation-play-state:paused]"
+        >
+          <HandIcon />
+          Nuevo Lavado
+        </button>
+      </div>
+
+      <div className="mx-auto mt-8 max-w-3xl space-y-8">
+        {SECCIONES.map((seccion) => {
+          const items = lavadosDe(seccion);
+          const colapsada = Boolean(colapsadas[seccion.id]);
+
+          return (
+            <section key={seccion.id} aria-label={seccion.titulo}>
+              <div className="flex items-center gap-3">
+                <img
+                  src={bubblesIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="animate-burbuja h-10 w-10"
+                />
+                <div
+                  className={`flex flex-1 items-center gap-3 rounded-full border-2 ${seccion.borde} bg-brand-input px-4 py-1`}
+                >
+                  <span className={`text-sm font-bold ${seccion.etiqueta}`}>{seccion.titulo}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleSeccion(seccion.id)}
+                    aria-label={`${colapsada ? 'Expandir' : 'Contraer'} ${seccion.titulo}`}
+                    className={`ml-auto flex h-6 w-6 items-center justify-center rounded-full border ${seccion.borde} ${seccion.etiqueta}`}
+                  >
+                    <ChevronIcon arriba={colapsada} />
+                  </button>
+                </div>
+              </div>
+
+              {colapsada ? null : (
+                <div className="mt-3 space-y-4">
+                  {items.map((lavado) => (
+                    <div
+                      key={lavado.codigoLavado}
+                      className="mx-auto w-full max-w-2xl rounded-2xl border border-white bg-[#2637a2] p-6"
+                    >
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">N° Lavado</span>
+                          <input
+                            readOnly
+                            aria-label="N° Lavado"
+                            value={lavado.codigoLavado ?? ''}
+                            className="w-20 rounded-md bg-brand-pink px-2 py-1 text-sm text-brand-navy"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">Hora</span>
+                          <input
+                            readOnly
+                            aria-label="Hora"
+                            value={formatHora(lavado.fechaHoraLavado)}
+                            className="w-28 rounded-md bg-brand-pink px-2 py-1 text-sm text-brand-navy"
+                          />
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">Patente</span>
+                          <input
+                            readOnly
+                            aria-label="Patente"
+                            value={lavado.vehiculo?.patenteVehi ?? ''}
+                            className="w-28 rounded-md bg-brand-pink px-2 py-1 text-sm text-brand-navy"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="mt-4 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setInfo(lavado)}
+                          className="rounded-full bg-brand-green px-4 py-1 text-sm font-bold text-white"
+                        >
+                          + info
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/lavados/${lavado.codigoLavado}/editar`)}
+                          className="rounded-full bg-gray-400 px-4 py-1 text-sm font-bold text-white"
+                        >
+                          Editar
+                        </button>
+                      </div>
+
+                      <div className="mt-3 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => setAvance({ lavado, seccion })}
+                          className="rounded-full bg-green-600 px-8 py-2 font-bold text-white"
+                        >
+                          {seccion.accion.etiqueta}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="mt-8 flex justify-center">
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+          className="rounded-full bg-green-600 px-8 py-2 font-bold text-white"
+        >
+          ←
+        </button>
+      </div>
+
+      {info ? <LavadoInfoPopup lavado={info} onClose={() => setInfo(null)} /> : null}
+
+      {avance ? (
+        <Popup message={avance.seccion.accion.popup} onClose={handleAcceptAvance} />
+      ) : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/LavadosPage.jsx =====
+

@@ -1,0 +1,3804 @@
+PROYECTO: LavAutos oPreto - Sistema de gestion de lavadero de vehiculos
+EQUIPO: [EquipoXX]
+VERSION: entrega-final
+COMMIT: no incluido
+PARTE: 1 de 3
+
+===== INICIO ARCHIVO: README.md =====
+# LavAutos-oPreto
+Este sistema gestiona lavados de vehiculos para lavaderos de autos. Gestiona clientes, vehiculos, lavados, stock y pagos
+===== FIN ARCHIVO: README.md =====
+
+===== INICIO ARCHIVO: src/backend/.env.example =====
+# Configuracion del backend (copiar a .env y completar). No incluir credenciales reales aqui.
+
+# Puerto del servidor HTTP
+PORT=3000
+
+# Conexion a SQL Server
+DB_DIALECT=mssql
+DB_SERVER=localhost
+DB_INSTANCE=SQLEXPRESS01
+DB_NAME=DataBaseLavadero
+DB_PORT=
+DB_ENCRYPT=true
+DB_TRUST_SERVER_CERTIFICATE=true
+
+# Autenticacion: "ntlm" (Windows integrada) o "default" (usuario/contraseña SQL)
+DB_AUTH_TYPE=ntlm
+DB_DOMAIN=TU_DOMINIO_O_EQUIPO
+DB_USER=TU_USUARIO_WINDOWS
+DB_PASSWORD=TU_CONTRASENA
+
+# Sesion
+SESSION_SECRET=CAMBIAR_POR_UN_SECRETO_LARGO
+SESSION_COOKIE_SECURE=false
+===== FIN ARCHIVO: src/backend/.env.example =====
+
+===== INICIO ARCHIVO: src/frontend/package.json =====
+{
+  "name": "lavadero-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Frontend del lavadero de vehiculos (React + Vite + Tailwind)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "jsdom": "^25.0.1",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
+===== FIN ARCHIVO: src/frontend/package.json =====
+
+===== INICIO ARCHIVO: src/backend/package.json =====
+{
+  "name": "lavadero-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend REST del lavadero de vehiculos (Express + Sequelize + SQL Server)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "jest --runInBand",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "sequelize": "^6.37.5",
+    "tedious": "^16.7.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.4.2",
+    "supertest": "^7.0.0"
+  }
+}
+===== FIN ARCHIVO: src/backend/package.json =====
+
+===== INICIO ARCHIVO: src/frontend/vite.config.js =====
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+  },
+});
+===== FIN ARCHIVO: src/frontend/vite.config.js =====
+
+===== INICIO ARCHIVO: src/frontend/eslint.config.js =====
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+
+export default [
+  { ignores: ['dist', 'node_modules', 'coverage'] },
+  js.configs.recommended,
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.browser },
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-refresh/only-export-components': 'warn',
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+  {
+    files: ['**/*.test.{js,jsx}', 'src/test/**/*.{js,jsx}'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+  },
+];
+===== FIN ARCHIVO: src/frontend/eslint.config.js =====
+
+===== INICIO ARCHIVO: src/frontend/.prettierrc =====
+{
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "printWidth": 100
+}
+===== FIN ARCHIVO: src/frontend/.prettierrc =====
+
+===== INICIO ARCHIVO: src/backend/eslint.config.js =====
+const js = require('@eslint/js');
+const globals = require('globals');
+
+module.exports = [
+  {
+    ignores: ['node_modules/**', 'coverage/**'],
+  },
+  js.configs.recommended,
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-console': 'off',
+    },
+  },
+];
+===== FIN ARCHIVO: src/backend/eslint.config.js =====
+
+===== INICIO ARCHIVO: src/backend/jest.config.js =====
+module.exports = {
+  testEnvironment: 'node',
+  testMatch: ['**/tests/**/*.test.js'],
+  setupFiles: ['<rootDir>/tests/setupEnv.js'],
+  testTimeout: 30000,
+};
+===== FIN ARCHIVO: src/backend/jest.config.js =====
+
+===== INICIO ARCHIVO: src/backend/.prettierrc =====
+{
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "printWidth": 100
+}
+===== FIN ARCHIVO: src/backend/.prettierrc =====
+
+===== INICIO ARCHIVO: src/frontend/index.html =====
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LavAutos oPreto</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+===== FIN ARCHIVO: src/frontend/index.html =====
+
+===== INICIO ARCHIVO: src/databaseLavadero/script db/DataBaseLavadero.sql =====
+/*
+    DataBaseLavadero - Esquema de base de datos
+    Motor: Microsoft SQL Server
+
+    Descripcion:
+        Crea la base de datos DataBaseLavadero con las tablas del dominio del
+        lavadero de vehiculos, sus claves primarias, claves foraneas y relaciones.
+
+    Alcance:
+        Esquema y datos iniciales de los catalogos: utilerias, categorias y estados
+        de lavado, categorias, marcas y modelos de vehiculo. Las inserciones son
+        idempotentes y no destructivas.
+
+    Caracteristicas:
+        - Idempotente y no destructivo: crea la base y las tablas solo si no
+          existen. No elimina objetos ni datos.
+        - La herencia Cliente/Persona se implementa como tabla por tipo (TPT):
+          Cliente comparte la clave primaria codigoPersona de Persona.
+        - Se preserva la relacion Lavado -> Vehiculo -> Cliente, sin una clave
+          foranea directa de Lavado hacia Cliente.
+
+    Uso:
+        Revisar el script y ejecutarlo manualmente en SQL Server Management
+        Studio o sqlcmd sobre una instancia de SQL Server accesible.
+*/
+
+SET NOCOUNT ON;
+GO
+
+/* 1. Base de datos */
+IF DB_ID(N'DataBaseLavadero') IS NULL
+BEGIN
+    CREATE DATABASE [DataBaseLavadero] COLLATE Modern_Spanish_CI_AS;
+END
+GO
+
+USE [DataBaseLavadero];
+GO
+
+/* 2. Personas y clientes (herencia TPT) */
+
+IF OBJECT_ID(N'dbo.Persona', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Persona
+    (
+        codigoPersona BIGINT IDENTITY(1,1) NOT NULL,
+        nombre        VARCHAR(100) NOT NULL,
+        apellido      VARCHAR(100) NOT NULL,
+        dni           BIGINT       NOT NULL,
+        email         VARCHAR(150) NULL,
+        celular       BIGINT       NULL,
+        CONSTRAINT PK_Persona PRIMARY KEY (codigoPersona)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.Cliente', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Cliente
+    (
+        codigoPersona BIGINT NOT NULL,
+        estadoCliente BIT    NOT NULL,
+        CONSTRAINT PK_Cliente PRIMARY KEY (codigoPersona),
+        CONSTRAINT FK_Cliente_Persona FOREIGN KEY (codigoPersona)
+            REFERENCES dbo.Persona (codigoPersona)
+    );
+END
+GO
+
+/* 3. Catalogo de vehiculos */
+
+IF OBJECT_ID(N'dbo.CategoriaVehiculo', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.CategoriaVehiculo
+    (
+        codigoCategoriaVehi BIGINT       IDENTITY(1,1) NOT NULL,
+        categoriaVehi       VARCHAR(100) NOT NULL,
+        CONSTRAINT PK_CategoriaVehiculo PRIMARY KEY (codigoCategoriaVehi)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.MarcaVehiculo', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.MarcaVehiculo
+    (
+        codigoMarcaVehi BIGINT       IDENTITY(1,1) NOT NULL,
+        marcaVehi       VARCHAR(100) NOT NULL,
+        categoriaVehi   BIGINT       NOT NULL,
+        CONSTRAINT PK_MarcaVehiculo PRIMARY KEY (codigoMarcaVehi),
+        CONSTRAINT FK_MarcaVehiculo_CategoriaVehiculo FOREIGN KEY (categoriaVehi)
+            REFERENCES dbo.CategoriaVehiculo (codigoCategoriaVehi)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.ModeloVehiculo', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ModeloVehiculo
+    (
+        codigoModeloVehi BIGINT       IDENTITY(1,1) NOT NULL,
+        modeloVehi       VARCHAR(100) NOT NULL,
+        marcaVehi        BIGINT       NOT NULL,
+        CONSTRAINT PK_ModeloVehiculo PRIMARY KEY (codigoModeloVehi),
+        CONSTRAINT FK_ModeloVehiculo_MarcaVehiculo FOREIGN KEY (marcaVehi)
+            REFERENCES dbo.MarcaVehiculo (codigoMarcaVehi)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.Vehiculo', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Vehiculo
+    (
+        codigoVehi  BIGINT      IDENTITY(1,1) NOT NULL,
+        patenteVehi VARCHAR(20) NOT NULL,
+        estadoVehi  BIT         NOT NULL,
+        cliente     BIGINT      NOT NULL,
+        modeloVehi  BIGINT      NOT NULL,
+        CONSTRAINT PK_Vehiculo PRIMARY KEY (codigoVehi),
+        CONSTRAINT FK_Vehiculo_Cliente FOREIGN KEY (cliente)
+            REFERENCES dbo.Cliente (codigoPersona),
+        CONSTRAINT FK_Vehiculo_ModeloVehiculo FOREIGN KEY (modeloVehi)
+            REFERENCES dbo.ModeloVehiculo (codigoModeloVehi)
+    );
+END
+GO
+
+/* 4. Usuarios, login, categorias y lavados */
+
+IF OBJECT_ID(N'dbo.Usuario', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Usuario
+    (
+        codigoUsuario BIGINT       IDENTITY(1,1) NOT NULL,
+        nombreUsuario VARCHAR(100) NOT NULL,
+        [contraseña]  VARCHAR(255) NOT NULL,
+        CONSTRAINT PK_Usuario PRIMARY KEY (codigoUsuario)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.Login', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Login
+    (
+        codigoLogin BIGINT IDENTITY(1,1) NOT NULL,
+        usuario     BIGINT NOT NULL,
+        CONSTRAINT PK_Login PRIMARY KEY (codigoLogin),
+        CONSTRAINT FK_Login_Usuario FOREIGN KEY (usuario)
+            REFERENCES dbo.Usuario (codigoUsuario)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.CategoriaLavado', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.CategoriaLavado
+    (
+        codigoCategoriaLavado BIGINT       IDENTITY(1,1) NOT NULL,
+        descripcionLavado     VARCHAR(200) NOT NULL,
+        CONSTRAINT PK_CategoriaLavado PRIMARY KEY (codigoCategoriaLavado)
+    );
+END
+
+
+
+GO
+
+IF OBJECT_ID(N'dbo.EstadoLavado', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.EstadoLavado
+    (
+        codigoEstado      BIGINT       IDENTITY(1,1) NOT NULL,
+        descripcionEstado VARCHAR(200) NOT NULL,
+        estadoLavado      BIT          NOT NULL,
+        CONSTRAINT PK_EstadoLavado PRIMARY KEY (codigoEstado)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.Utileria', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Utileria
+    (
+        codigoUtileria      BIGINT       IDENTITY(1,1) NOT NULL,
+        descripcionUtileria VARCHAR(200) NOT NULL,
+        estadoUtileria      BIT          NOT NULL,
+        CONSTRAINT PK_Utileria PRIMARY KEY (codigoUtileria)
+    );
+END
+GO
+
+IF OBJECT_ID(N'dbo.Lavado', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Lavado
+    (
+        codigoLavado    BIGINT       IDENTITY(1,1) NOT NULL,
+        fechaHoraLavado DATETIME2    NOT NULL,
+        vehi            BIGINT       NOT NULL,
+        categoriaLavado BIGINT       NOT NULL,
+        login           BIGINT       NOT NULL,
+        estado          BIGINT       NOT NULL,
+        utileria        BIGINT       NOT NULL,
+        detallesLavado  VARCHAR(255) NULL,
+        fechaHoraLavadoTerminado DATETIME2    NOT NULL,
+        CONSTRAINT PK_Lavado PRIMARY KEY (codigoLavado),
+        CONSTRAINT FK_Lavado_Vehiculo FOREIGN KEY (vehi)
+            REFERENCES dbo.Vehiculo (codigoVehi),
+        CONSTRAINT FK_Lavado_CategoriaLavado FOREIGN KEY (categoriaLavado)
+            REFERENCES dbo.CategoriaLavado (codigoCategoriaLavado),
+        CONSTRAINT FK_Lavado_Login FOREIGN KEY (login)
+            REFERENCES dbo.Login (codigoLogin),
+        CONSTRAINT FK_Lavado_EstadoLavado FOREIGN KEY (estado)
+            REFERENCES dbo.EstadoLavado (codigoEstado),
+        CONSTRAINT FK_Lavado_Utileria FOREIGN KEY (utileria)
+            REFERENCES dbo.Utileria (codigoUtileria)
+    );
+END
+
+GO
+/* 5. Datos iniciales de catalogos */
+
+/* CategoriaVehiculo */
+SET IDENTITY_INSERT dbo.CategoriaVehiculo ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaVehiculo WHERE codigoCategoriaVehi = 43)
+    INSERT INTO dbo.CategoriaVehiculo (codigoCategoriaVehi, categoriaVehi) VALUES (43, N'Camion');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaVehiculo WHERE codigoCategoriaVehi = 44)
+    INSERT INTO dbo.CategoriaVehiculo (codigoCategoriaVehi, categoriaVehi) VALUES (44, N'Automovil');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaVehiculo WHERE codigoCategoriaVehi = 45)
+    INSERT INTO dbo.CategoriaVehiculo (codigoCategoriaVehi, categoriaVehi) VALUES (45, N'Utilitario');
+SET IDENTITY_INSERT dbo.CategoriaVehiculo OFF;
+GO
+
+/* MarcaVehiculo */
+SET IDENTITY_INSERT dbo.MarcaVehiculo ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 38)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (38, N'Iveco', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 39)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (39, N'Mercedes Benz', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 40)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (40, N'VolksWagen', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 41)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (41, N'Renault', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 42)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (42, N'Ford', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 43)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (43, N'Nissan', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 44)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (44, N'Toyota', 45);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 45)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (45, N'Peugeot', 45);
+IF NOT EXISTS (SELECT 1 FROM dbo.MarcaVehiculo WHERE codigoMarcaVehi = 46)
+    INSERT INTO dbo.MarcaVehiculo (codigoMarcaVehi, marcaVehi, categoriaVehi) VALUES (46, N'Citroen', 45);
+SET IDENTITY_INSERT dbo.MarcaVehiculo OFF;
+GO
+
+/* ModeloVehiculo */
+SET IDENTITY_INSERT dbo.ModeloVehiculo ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 43)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (43, N'Daily', 38);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 44)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (44, N'Atego', 39);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 45)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (45, N'Worker', 40);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 46)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (46, N'Duster', 41);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 47)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (47, N'Fiesta', 42);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 48)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (48, N'Versa', 43);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 49)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (49, N'Hilux', 44);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 50)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (50, N'Partner', 45);
+IF NOT EXISTS (SELECT 1 FROM dbo.ModeloVehiculo WHERE codigoModeloVehi = 51)
+    INSERT INTO dbo.ModeloVehiculo (codigoModeloVehi, modeloVehi, marcaVehi) VALUES (51, N'Berlingo', 46);
+SET IDENTITY_INSERT dbo.ModeloVehiculo OFF;
+GO
+
+/* Utileria */
+IF NOT EXISTS (SELECT 1 FROM dbo.Utileria WHERE descripcionUtileria = N'Auxilio')
+    INSERT INTO dbo.Utileria (descripcionUtileria, estadoUtileria) VALUES (N'Auxilio', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.Utileria WHERE descripcionUtileria = N'Balizas')
+    INSERT INTO dbo.Utileria (descripcionUtileria, estadoUtileria) VALUES (N'Balizas', 0);
+IF NOT EXISTS (SELECT 1 FROM dbo.Utileria WHERE descripcionUtileria = N'Matafuegos')
+    INSERT INTO dbo.Utileria (descripcionUtileria, estadoUtileria) VALUES (N'Matafuegos', 0);
+GO
+
+/* CategoriaLavado */
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaLavado WHERE descripcionLavado = N'Basico')
+    INSERT INTO dbo.CategoriaLavado (descripcionLavado) VALUES (N'Basico');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaLavado WHERE descripcionLavado = N'Completo')
+    INSERT INTO dbo.CategoriaLavado (descripcionLavado) VALUES (N'Completo');
+IF NOT EXISTS (SELECT 1 FROM dbo.CategoriaLavado WHERE descripcionLavado = N'Premium')
+    INSERT INTO dbo.CategoriaLavado (descripcionLavado) VALUES (N'Premium');
+GO
+
+/* EstadoLavado */
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'En Espera')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'En Espera', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Lavando')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Lavando', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Terminado')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Terminado', 1);
+IF NOT EXISTS (SELECT 1 FROM dbo.EstadoLavado WHERE descripcionEstado = N'Entregado')
+    INSERT INTO dbo.EstadoLavado (descripcionEstado, estadoLavado) VALUES (N'Entregado', 1);
+GO
+===== FIN ARCHIVO: src/databaseLavadero/script db/DataBaseLavadero.sql =====
+
+===== INICIO ARCHIVO: src/backend/config/database.js =====
+const { Sequelize } = require('sequelize');
+const { loadConfig } = require('./index');
+
+const config = loadConfig();
+
+function buildDialectOptions() {
+  const options = {
+    encrypt: config.db.encrypt,
+    trustServerCertificate: config.db.trustServerCertificate,
+  };
+
+  if (config.db.instance) {
+    options.instanceName = config.db.instance;
+  }
+
+  const dialectOptions = { options };
+
+  if (config.db.authType === 'ntlm') {
+    dialectOptions.authentication = {
+      type: 'ntlm',
+      options: {
+        domain: config.db.domain,
+        userName: config.db.user,
+        password: config.db.password,
+      },
+    };
+  }
+
+  return dialectOptions;
+}
+
+const sequelize = new Sequelize(config.db.name, config.db.user, config.db.password, {
+  host: config.db.server,
+  port: config.db.instance ? undefined : config.db.port || 1433,
+  dialect: config.db.dialect,
+  dialectOptions: buildDialectOptions(),
+  logging: false,
+});
+
+module.exports = { sequelize, config };
+===== FIN ARCHIVO: src/backend/config/database.js =====
+
+===== INICIO ARCHIVO: src/backend/config/index.js =====
+require('dotenv').config();
+
+const REQUIRED_ENV = ['DB_SERVER', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'SESSION_SECRET'];
+
+function toBoolean(value, fallback) {
+  if (value === undefined || value === '') {
+    return fallback;
+  }
+  return value === 'true';
+}
+
+function loadConfig() {
+  const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Faltan variables de entorno requeridas: ${missing.join(', ')}`);
+  }
+
+  return {
+    port: Number(process.env.PORT || 3000),
+    db: {
+      server: process.env.DB_SERVER,
+      instance: process.env.DB_INSTANCE || undefined,
+      name: process.env.DB_NAME,
+      dialect: process.env.DB_DIALECT || 'mssql',
+      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
+      authType: (process.env.DB_AUTH_TYPE || 'default').toLowerCase(),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      domain: process.env.DB_DOMAIN || undefined,
+      encrypt: toBoolean(process.env.DB_ENCRYPT, true),
+      trustServerCertificate: toBoolean(process.env.DB_TRUST_SERVER_CERTIFICATE, true),
+    },
+    session: {
+      secret: process.env.SESSION_SECRET,
+      cookieSecure: toBoolean(process.env.SESSION_COOKIE_SECURE, false),
+    },
+  };
+}
+
+module.exports = { loadConfig };
+===== FIN ARCHIVO: src/backend/config/index.js =====
+
+===== INICIO ARCHIVO: src/backend/controllers/authController.js =====
+const asyncHandler = require('../utils/asyncHandler');
+const authService = require('../services/authService');
+
+const login = asyncHandler(async (req, res) => {
+  const data = await authService.login(req.body, req.session);
+  res.status(200).json({ success: true, data });
+});
+
+const logout = asyncHandler(async (req, res) => {
+  await authService.logout(req.session);
+  res.status(204).send();
+});
+
+const session = asyncHandler(async (req, res) => {
+  const data = authService.getSession(req.session);
+  res.status(200).json({ success: true, data });
+});
+
+module.exports = { login, logout, session };
+===== FIN ARCHIVO: src/backend/controllers/authController.js =====
+
+===== INICIO ARCHIVO: src/backend/controllers/crudController.js =====
+const asyncHandler = require('../utils/asyncHandler');
+
+function createCrudController(service) {
+  return {
+    list: asyncHandler(async (req, res) => {
+      const data = await service.list(req.query);
+      res.status(200).json({ success: true, data });
+    }),
+
+    getById: asyncHandler(async (req, res) => {
+      const data = await service.getById(req.params.id);
+      res.status(200).json({ success: true, data });
+    }),
+
+    create: asyncHandler(async (req, res) => {
+      const data = await service.create(req.body);
+      res.status(201).json({ success: true, data });
+    }),
+
+    update: asyncHandler(async (req, res) => {
+      const data = await service.update(req.params.id, req.body);
+      res.status(200).json({ success: true, data });
+    }),
+
+    remove: asyncHandler(async (req, res) => {
+      await service.remove(req.params.id);
+      res.status(204).send();
+    }),
+  };
+}
+
+module.exports = { createCrudController };
+===== FIN ARCHIVO: src/backend/controllers/crudController.js =====
+
+===== INICIO ARCHIVO: src/backend/middlewares/errorHandler.js =====
+const AppError = require('../utils/AppError');
+
+function normalizeError(err) {
+  if (err instanceof AppError) {
+    return err;
+  }
+
+  switch (err.name) {
+    case 'SequelizeValidationError':
+      return new AppError('Datos invalidos.', 400);
+    case 'SequelizeUniqueConstraintError':
+      return new AppError('El recurso ya existe.', 409);
+    case 'SequelizeForeignKeyConstraintError':
+      return new AppError('No se puede completar la operacion por dependencias existentes.', 409);
+    default:
+      return null;
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+function errorHandler(err, req, res, next) {
+  const normalized = normalizeError(err);
+  const statusCode = normalized ? normalized.statusCode : 500;
+  const message = normalized ? normalized.message : 'Error interno del servidor';
+
+  res.status(statusCode).json({ success: false, error: { message } });
+}
+
+module.exports = errorHandler;
+===== FIN ARCHIVO: src/backend/middlewares/errorHandler.js =====
+
+===== INICIO ARCHIVO: src/backend/middlewares/notFound.js =====
+const AppError = require('../utils/AppError');
+
+function notFound(req, res, next) {
+  next(new AppError(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, 404));
+}
+
+module.exports = notFound;
+===== FIN ARCHIVO: src/backend/middlewares/notFound.js =====
+
+===== INICIO ARCHIVO: src/backend/middlewares/requireAuth.js =====
+const AppError = require('../utils/AppError');
+
+function requireAuth(req, res, next) {
+  if (!req.session || !req.session.codigoUsuario) {
+    return next(new AppError('No autenticado.', 401));
+  }
+  return next();
+}
+
+module.exports = requireAuth;
+===== FIN ARCHIVO: src/backend/middlewares/requireAuth.js =====
+
+===== INICIO ARCHIVO: src/backend/models/CategoriaLavado.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const CategoriaLavado = sequelize.define(
+  'CategoriaLavado',
+  {
+    codigoCategoriaLavado: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    descripcionLavado: { type: DataTypes.STRING(200), allowNull: false },
+  },
+  { tableName: 'CategoriaLavado', timestamps: false },
+);
+
+module.exports = CategoriaLavado;
+===== FIN ARCHIVO: src/backend/models/CategoriaLavado.js =====
+
+===== INICIO ARCHIVO: src/backend/models/CategoriaVehiculo.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const CategoriaVehiculo = sequelize.define(
+  'CategoriaVehiculo',
+  {
+    codigoCategoriaVehi: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    categoriaVehi: { type: DataTypes.STRING(100), allowNull: false },
+  },
+  { tableName: 'CategoriaVehiculo', timestamps: false },
+);
+
+module.exports = CategoriaVehiculo;
+===== FIN ARCHIVO: src/backend/models/CategoriaVehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Cliente.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Cliente = sequelize.define(
+  'Cliente',
+  {
+    codigoPersona: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: false },
+    estadoCliente: { type: DataTypes.BOOLEAN, allowNull: false },
+  },
+  { tableName: 'Cliente', timestamps: false },
+);
+
+module.exports = Cliente;
+===== FIN ARCHIVO: src/backend/models/Cliente.js =====
+
+===== INICIO ARCHIVO: src/backend/models/EstadoLavado.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const EstadoLavado = sequelize.define(
+  'EstadoLavado',
+  {
+    codigoEstado: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    descripcionEstado: { type: DataTypes.STRING(200), allowNull: false },
+    estadoLavado: { type: DataTypes.BOOLEAN, allowNull: false },
+  },
+  { tableName: 'EstadoLavado', timestamps: false },
+);
+
+module.exports = EstadoLavado;
+===== FIN ARCHIVO: src/backend/models/EstadoLavado.js =====
+
+===== INICIO ARCHIVO: src/backend/models/index.js =====
+const { sequelize } = require('../config/database');
+const Persona = require('./Persona');
+const Cliente = require('./Cliente');
+const CategoriaVehiculo = require('./CategoriaVehiculo');
+const MarcaVehiculo = require('./MarcaVehiculo');
+const ModeloVehiculo = require('./ModeloVehiculo');
+const Vehiculo = require('./Vehiculo');
+const CategoriaLavado = require('./CategoriaLavado');
+const EstadoLavado = require('./EstadoLavado');
+const Utileria = require('./Utileria');
+const Lavado = require('./Lavado');
+const Usuario = require('./Usuario');
+const Login = require('./Login');
+
+// Herencia Cliente/Persona (tabla por tipo, clave compartida codigoPersona)
+Persona.hasOne(Cliente, { foreignKey: 'codigoPersona', as: 'cliente' });
+Cliente.belongsTo(Persona, { foreignKey: 'codigoPersona', as: 'persona' });
+
+// Catalogo y vehiculos
+CategoriaVehiculo.hasMany(MarcaVehiculo, { foreignKey: 'categoriaVehi', as: 'marcas' });
+MarcaVehiculo.belongsTo(CategoriaVehiculo, { foreignKey: 'categoriaVehi', as: 'categoria' });
+
+MarcaVehiculo.hasMany(ModeloVehiculo, { foreignKey: 'marcaVehi', as: 'modelos' });
+ModeloVehiculo.belongsTo(MarcaVehiculo, { foreignKey: 'marcaVehi', as: 'marca' });
+
+Cliente.hasMany(Vehiculo, { foreignKey: 'cliente', as: 'vehiculos' });
+Vehiculo.belongsTo(Cliente, { foreignKey: 'cliente', as: 'datosCliente' });
+
+ModeloVehiculo.hasMany(Vehiculo, { foreignKey: 'modeloVehi', as: 'vehiculos' });
+Vehiculo.belongsTo(ModeloVehiculo, { foreignKey: 'modeloVehi', as: 'modelo' });
+
+// Lavados
+Vehiculo.hasMany(Lavado, { foreignKey: 'vehi', as: 'lavados' });
+Lavado.belongsTo(Vehiculo, { foreignKey: 'vehi', as: 'vehiculo' });
+
+CategoriaLavado.hasMany(Lavado, { foreignKey: 'categoriaLavado', as: 'lavados' });
+Lavado.belongsTo(CategoriaLavado, { foreignKey: 'categoriaLavado', as: 'categoria' });
+
+EstadoLavado.hasMany(Lavado, { foreignKey: 'estado', as: 'lavados' });
+Lavado.belongsTo(EstadoLavado, { foreignKey: 'estado', as: 'datosEstado' });
+
+Utileria.hasMany(Lavado, { foreignKey: 'utileria', as: 'lavados' });
+Lavado.belongsTo(Utileria, { foreignKey: 'utileria', as: 'datosUtileria' });
+
+// Usuario y Login
+Usuario.hasMany(Login, { foreignKey: 'usuario', as: 'logins' });
+Login.belongsTo(Usuario, { foreignKey: 'usuario', as: 'datosUsuario' });
+
+Login.hasMany(Lavado, { foreignKey: 'login', as: 'lavados' });
+Lavado.belongsTo(Login, { foreignKey: 'login', as: 'datosLogin' });
+
+module.exports = {
+  sequelize,
+  Persona,
+  Cliente,
+  CategoriaVehiculo,
+  MarcaVehiculo,
+  ModeloVehiculo,
+  Vehiculo,
+  CategoriaLavado,
+  EstadoLavado,
+  Utileria,
+  Lavado,
+  Usuario,
+  Login,
+};
+===== FIN ARCHIVO: src/backend/models/index.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Lavado.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Lavado = sequelize.define(
+  'Lavado',
+  {
+    codigoLavado: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    fechaHoraLavado: { type: DataTypes.DATE, allowNull: false },
+    fechaHoraLavadoTerminado: { type: DataTypes.DATE, allowNull: false },
+    vehi: { type: DataTypes.BIGINT, allowNull: false },
+    categoriaLavado: { type: DataTypes.BIGINT, allowNull: false },
+    login: { type: DataTypes.BIGINT, allowNull: false },
+    estado: { type: DataTypes.BIGINT, allowNull: false },
+    utileria: { type: DataTypes.BIGINT, allowNull: false },
+    detallesLavado: { type: DataTypes.STRING(255), allowNull: true },
+  },
+  { tableName: 'Lavado', timestamps: false },
+);
+
+Lavado.addHook('beforeValidate', (lavado) => {
+  if (lavado.isNewRecord) {
+    const marca = new Date();
+    lavado.fechaHoraLavado = marca;
+    lavado.fechaHoraLavadoTerminado = marca;
+  }
+});
+
+Lavado.addHook('beforeUpdate', (lavado) => {
+  if (lavado.changed('estado')) {
+    lavado.fechaHoraLavadoTerminado = new Date();
+  }
+});
+
+module.exports = Lavado;
+===== FIN ARCHIVO: src/backend/models/Lavado.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Login.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Login = sequelize.define(
+  'Login',
+  {
+    codigoLogin: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    usuario: { type: DataTypes.BIGINT, allowNull: false },
+  },
+  { tableName: 'Login', timestamps: false },
+);
+
+module.exports = Login;
+===== FIN ARCHIVO: src/backend/models/Login.js =====
+
+===== INICIO ARCHIVO: src/backend/models/MarcaVehiculo.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const MarcaVehiculo = sequelize.define(
+  'MarcaVehiculo',
+  {
+    codigoMarcaVehi: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    marcaVehi: { type: DataTypes.STRING(100), allowNull: false },
+    categoriaVehi: { type: DataTypes.BIGINT, allowNull: false },
+  },
+  { tableName: 'MarcaVehiculo', timestamps: false },
+);
+
+module.exports = MarcaVehiculo;
+===== FIN ARCHIVO: src/backend/models/MarcaVehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/models/ModeloVehiculo.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const ModeloVehiculo = sequelize.define(
+  'ModeloVehiculo',
+  {
+    codigoModeloVehi: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    modeloVehi: { type: DataTypes.STRING(100), allowNull: false },
+    marcaVehi: { type: DataTypes.BIGINT, allowNull: false },
+  },
+  { tableName: 'ModeloVehiculo', timestamps: false },
+);
+
+module.exports = ModeloVehiculo;
+===== FIN ARCHIVO: src/backend/models/ModeloVehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Persona.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Persona = sequelize.define(
+  'Persona',
+  {
+    codigoPersona: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    nombre: { type: DataTypes.STRING(100), allowNull: false },
+    apellido: { type: DataTypes.STRING(100), allowNull: false },
+    dni: { type: DataTypes.BIGINT, allowNull: false },
+    email: { type: DataTypes.STRING(150), allowNull: true },
+    celular: { type: DataTypes.BIGINT, allowNull: true },
+  },
+  { tableName: 'Persona', timestamps: false },
+);
+
+module.exports = Persona;
+===== FIN ARCHIVO: src/backend/models/Persona.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Usuario.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Usuario = sequelize.define(
+  'Usuario',
+  {
+    codigoUsuario: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    nombreUsuario: { type: DataTypes.STRING(100), allowNull: false },
+    'contraseña': { type: DataTypes.STRING(255), allowNull: false, field: 'contraseña' },
+  },
+  { tableName: 'Usuario', timestamps: false },
+);
+
+module.exports = Usuario;
+===== FIN ARCHIVO: src/backend/models/Usuario.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Utileria.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Utileria = sequelize.define(
+  'Utileria',
+  {
+    codigoUtileria: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    descripcionUtileria: { type: DataTypes.STRING(200), allowNull: false },
+    estadoUtileria: { type: DataTypes.BOOLEAN, allowNull: false },
+  },
+  { tableName: 'Utileria', timestamps: false },
+);
+
+module.exports = Utileria;
+===== FIN ARCHIVO: src/backend/models/Utileria.js =====
+
+===== INICIO ARCHIVO: src/backend/models/Vehiculo.js =====
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+const Vehiculo = sequelize.define(
+  'Vehiculo',
+  {
+    codigoVehi: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    patenteVehi: { type: DataTypes.STRING(20), allowNull: false },
+    estadoVehi: { type: DataTypes.BOOLEAN, allowNull: false },
+    cliente: { type: DataTypes.BIGINT, allowNull: false },
+    modeloVehi: { type: DataTypes.BIGINT, allowNull: false },
+  },
+  { tableName: 'Vehiculo', timestamps: false },
+);
+
+module.exports = Vehiculo;
+===== FIN ARCHIVO: src/backend/models/Vehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/auth.js =====
+const { Router } = require('express');
+const authController = require('../controllers/authController');
+
+const router = Router();
+
+router.post('/login', authController.login);
+router.post('/logout', authController.logout);
+router.get('/session', authController.session);
+
+module.exports = router;
+===== FIN ARCHIVO: src/backend/routes/auth.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/categoriasLavado.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const categoriaLavadoService = require('../services/categoriaLavadoService');
+
+module.exports = createCrudRouter(createCrudController(categoriaLavadoService));
+===== FIN ARCHIVO: src/backend/routes/categoriasLavado.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/categoriasVehiculo.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const categoriaVehiculoService = require('../services/categoriaVehiculoService');
+
+module.exports = createCrudRouter(createCrudController(categoriaVehiculoService));
+===== FIN ARCHIVO: src/backend/routes/categoriasVehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/clientes.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const clienteService = require('../services/clienteService');
+
+module.exports = createCrudRouter(createCrudController(clienteService));
+===== FIN ARCHIVO: src/backend/routes/clientes.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/crudRoutes.js =====
+const { Router } = require('express');
+
+function createCrudRouter(controller, { allowDelete = true } = {}) {
+  const router = Router();
+
+  router.get('/', controller.list);
+  router.get('/:id', controller.getById);
+  router.post('/', controller.create);
+  router.put('/:id', controller.update);
+
+  if (allowDelete) {
+    router.delete('/:id', controller.remove);
+  } else {
+    router.delete('/:id', (req, res) => {
+      res.status(405).json({
+        success: false,
+        error: { message: 'No se permite eliminar este recurso.' },
+      });
+    });
+  }
+
+  return router;
+}
+
+module.exports = { createCrudRouter };
+===== FIN ARCHIVO: src/backend/routes/crudRoutes.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/estadosLavado.js =====
+const { Router } = require('express');
+const { createCrudController } = require('../controllers/crudController');
+const estadoLavadoService = require('../services/estadoLavadoService');
+
+const controller = createCrudController(estadoLavadoService);
+const router = Router();
+
+router.get('/', controller.list);
+
+module.exports = router;
+===== FIN ARCHIVO: src/backend/routes/estadosLavado.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/index.js =====
+const { Router } = require('express');
+const auth = require('./auth');
+const requireAuth = require('../middlewares/requireAuth');
+const clientes = require('./clientes');
+const vehiculos = require('./vehiculos');
+const categoriasVehiculo = require('./categoriasVehiculo');
+const marcasVehiculo = require('./marcasVehiculo');
+const modelosVehiculo = require('./modelosVehiculo');
+const lavados = require('./lavados');
+const categoriasLavado = require('./categoriasLavado');
+const utilerias = require('./utilerias');
+const estadosLavado = require('./estadosLavado');
+
+const router = Router();
+
+router.use('/auth', auth);
+
+router.use('/clientes', requireAuth, clientes);
+router.use('/vehiculos', requireAuth, vehiculos);
+router.use('/categorias-vehiculo', requireAuth, categoriasVehiculo);
+router.use('/marcas-vehiculo', requireAuth, marcasVehiculo);
+router.use('/modelos-vehiculo', requireAuth, modelosVehiculo);
+router.use('/lavados', requireAuth, lavados);
+router.use('/categorias-lavado', requireAuth, categoriasLavado);
+router.use('/utilerias', requireAuth, utilerias);
+router.use('/estados-lavado', requireAuth, estadosLavado);
+
+module.exports = router;
+===== FIN ARCHIVO: src/backend/routes/index.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/lavados.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const lavadoService = require('../services/lavadoService');
+
+module.exports = createCrudRouter(createCrudController(lavadoService), { allowDelete: false });
+===== FIN ARCHIVO: src/backend/routes/lavados.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/marcasVehiculo.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const marcaVehiculoService = require('../services/marcaVehiculoService');
+
+module.exports = createCrudRouter(createCrudController(marcaVehiculoService));
+===== FIN ARCHIVO: src/backend/routes/marcasVehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/modelosVehiculo.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const modeloVehiculoService = require('../services/modeloVehiculoService');
+
+module.exports = createCrudRouter(createCrudController(modeloVehiculoService));
+===== FIN ARCHIVO: src/backend/routes/modelosVehiculo.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/utilerias.js =====
+const { Router } = require('express');
+const { createCrudController } = require('../controllers/crudController');
+const utileriaService = require('../services/utileriaService');
+
+const controller = createCrudController(utileriaService);
+const router = Router();
+
+router.get('/', controller.list);
+router.put('/:id', controller.update);
+
+module.exports = router;
+===== FIN ARCHIVO: src/backend/routes/utilerias.js =====
+
+===== INICIO ARCHIVO: src/backend/routes/vehiculos.js =====
+const { createCrudController } = require('../controllers/crudController');
+const { createCrudRouter } = require('./crudRoutes');
+const vehiculoService = require('../services/vehiculoService');
+
+module.exports = createCrudRouter(createCrudController(vehiculoService));
+===== FIN ARCHIVO: src/backend/routes/vehiculos.js =====
+
+===== INICIO ARCHIVO: src/backend/scripts/seed.js =====
+const { sequelize } = require('../models');
+const { ensureDefaultAdmin } = require('../services/adminService');
+const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
+
+async function seed() {
+  await sequelize.authenticate();
+
+  const { created } = await ensureDefaultAdmin();
+  if (created) {
+    console.log('Cuenta administrador creada.');
+  } else {
+    console.log('La cuenta administrador ya existe; no se modifica.');
+  }
+
+  const catalogosCreados = await ensureLavadoCatalogs();
+  console.log(`Catalogos de lavado creados: ${catalogosCreados}.`);
+
+  await sequelize.close();
+}
+
+seed().catch((error) => {
+  console.error('Error en el seed:', error.message);
+  process.exit(1);
+});
+===== FIN ARCHIVO: src/backend/scripts/seed.js =====
+
+===== INICIO ARCHIVO: src/backend/services/adminService.js =====
+const { Usuario } = require('../models');
+const { hashPassword } = require('../utils/password');
+
+const DEFAULT_ADMIN_USER = 'admin';
+const DEFAULT_ADMIN_PASSWORD = '123456';
+
+async function ensureDefaultAdmin({
+  nombreUsuario = DEFAULT_ADMIN_USER,
+  contrasena = DEFAULT_ADMIN_PASSWORD,
+} = {}) {
+  const existing = await Usuario.findOne({ where: { nombreUsuario } });
+  if (existing) {
+    return { created: false, codigoUsuario: existing.codigoUsuario };
+  }
+
+  const created = await Usuario.create({
+    nombreUsuario,
+    'contraseña': hashPassword(contrasena),
+  });
+
+  return { created: true, codigoUsuario: created.codigoUsuario };
+}
+
+module.exports = { ensureDefaultAdmin, DEFAULT_ADMIN_USER, DEFAULT_ADMIN_PASSWORD };
+===== FIN ARCHIVO: src/backend/services/adminService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/authService.js =====
+const { Usuario, Login } = require('../models');
+const AppError = require('../utils/AppError');
+const { verifyPassword } = require('../utils/password');
+
+const GENERIC_MESSAGE = 'Usuario o contrasena incorrectos.';
+
+async function login(payload = {}, session) {
+  const { usuario, contrasena } = payload;
+
+  if (!usuario || !contrasena) {
+    throw new AppError(GENERIC_MESSAGE, 401);
+  }
+
+  const user = await Usuario.findOne({ where: { nombreUsuario: usuario } });
+  const passwordMatches = user ? verifyPassword(contrasena, user.get('contraseña')) : false;
+
+  if (!user || !passwordMatches) {
+    throw new AppError(GENERIC_MESSAGE, 401);
+  }
+
+  const loginRecord = await Login.create({ usuario: user.codigoUsuario });
+
+  session.codigoLogin = loginRecord.codigoLogin;
+  session.codigoUsuario = user.codigoUsuario;
+  session.nombreUsuario = user.nombreUsuario;
+
+  return {
+    codigoUsuario: user.codigoUsuario,
+    nombreUsuario: user.nombreUsuario,
+    codigoLogin: loginRecord.codigoLogin,
+  };
+}
+
+function logout(session) {
+  return new Promise((resolve, reject) => {
+    session.destroy((error) => (error ? reject(error) : resolve()));
+  });
+}
+
+function getSession(session) {
+  if (!session || !session.codigoUsuario) {
+    throw new AppError('No hay sesion activa.', 401);
+  }
+
+  return {
+    authenticated: true,
+    codigoUsuario: session.codigoUsuario,
+    nombreUsuario: session.nombreUsuario,
+    codigoLogin: session.codigoLogin,
+  };
+}
+
+module.exports = { login, logout, getSession };
+===== FIN ARCHIVO: src/backend/services/authService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/catalogSeedService.js =====
+const { CategoriaLavado, EstadoLavado, Utileria } = require('../models');
+
+const CATEGORIAS = ['Basico', 'Completo', 'Premium'];
+const ESTADOS = ['En Espera', 'Lavando', 'Terminado', 'Entregado'];
+const UTILERIAS = ['Auxilio', 'Balizas', 'Matafuegos'];
+
+async function ensureRow(model, where, defaults) {
+  const existing = await model.findOne({ where });
+  if (existing) {
+    return false;
+  }
+  await model.create({ ...where, ...defaults });
+  return true;
+}
+
+async function ensureLavadoCatalogs() {
+  let created = 0;
+
+  for (const descripcionLavado of CATEGORIAS) {
+    if (await ensureRow(CategoriaLavado, { descripcionLavado })) {
+      created += 1;
+    }
+  }
+
+  for (const descripcionEstado of ESTADOS) {
+    if (await ensureRow(EstadoLavado, { descripcionEstado }, { estadoLavado: true })) {
+      created += 1;
+    }
+  }
+
+  for (const descripcionUtileria of UTILERIAS) {
+    if (await ensureRow(Utileria, { descripcionUtileria }, { estadoUtileria: false })) {
+      created += 1;
+    }
+  }
+
+  return created;
+}
+
+module.exports = { ensureLavadoCatalogs, CATEGORIAS, ESTADOS, UTILERIAS };
+===== FIN ARCHIVO: src/backend/services/catalogSeedService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/categoriaLavadoService.js =====
+const { CategoriaLavado } = require('../models');
+const { createCrudService } = require('./crudService');
+const { requireFields } = require('../utils/validators');
+
+const categoriaLavadoService = createCrudService({
+  model: CategoriaLavado,
+  name: 'Categoria de lavado',
+  fields: ['descripcionLavado'],
+  validateCreate: async (payload) => {
+    requireFields(payload, ['descripcionLavado']);
+  },
+});
+
+module.exports = categoriaLavadoService;
+===== FIN ARCHIVO: src/backend/services/categoriaLavadoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/categoriaVehiculoService.js =====
+const { CategoriaVehiculo } = require('../models');
+const { createCrudService } = require('./crudService');
+const { requireFields } = require('../utils/validators');
+
+const categoriaVehiculoService = createCrudService({
+  model: CategoriaVehiculo,
+  name: 'Categoria de vehiculo',
+  fields: ['categoriaVehi'],
+  validateCreate: async (payload) => {
+    requireFields(payload, ['categoriaVehi']);
+  },
+});
+
+module.exports = categoriaVehiculoService;
+===== FIN ARCHIVO: src/backend/services/categoriaVehiculoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/clienteService.js =====
+const { Op } = require('sequelize');
+const { sequelize, Persona, Cliente, Vehiculo, Lavado } = require('../models');
+const AppError = require('../utils/AppError');
+const { requireFields } = require('../utils/validators');
+const { assertSinLavadoActivo } = require('./lavadoActivoService');
+
+const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function toClienteResponse(cliente) {
+  const plain = cliente.get({ plain: true });
+  const persona = plain.persona || {};
+
+  return {
+    codigoPersona: plain.codigoPersona,
+    nombre: persona.nombre,
+    apellido: persona.apellido,
+    dni: persona.dni,
+    email: persona.email,
+    celular: persona.celular,
+    estadoCliente: plain.estadoCliente,
+  };
+}
+
+async function list(query = {}) {
+  const personaInclude = { model: Persona, as: 'persona' };
+  const term = typeof query.buscar === 'string' ? query.buscar.trim() : '';
+  const sinLavadosDesde =
+    typeof query.sinLavadosDesde === 'string' ? query.sinLavadosDesde.trim() : '';
+
+  if (term) {
+    const like = `%${term}%`;
+    personaInclude.where = {
+      [Op.or]: [
+        { nombre: { [Op.like]: like } },
+        { apellido: { [Op.like]: like } },
+        sequelize.where(sequelize.cast(sequelize.col('persona.dni'), 'NVARCHAR(20)'), {
+          [Op.like]: like,
+        }),
+      ],
+    };
+    personaInclude.required = true;
+  }
+
+  const where = { estadoCliente: true };
+
+  if (sinLavadosDesde) {
+    const excluir = await clientesConLavadosDesde(sinLavadosDesde);
+    if (excluir.length > 0) {
+      where.codigoPersona = { [Op.notIn]: excluir };
+    }
+  }
+
+  const clientes = await Cliente.findAll({
+    where,
+    include: [personaInclude],
+  });
+  return clientes.map(toClienteResponse);
+}
+
+async function clientesConLavadosDesde(valor) {
+  if (!FECHA_PATTERN.test(valor)) {
+    throw new AppError('La fecha debe tener formato YYYY-MM-DD.', 400);
+  }
+  const limite = new Date(`${valor}T23:59:59.999`);
+  if (Number.isNaN(limite.getTime())) {
+    throw new AppError('La fecha no es valida.', 400);
+  }
+
+  const lavados = await Lavado.findAll({
+    where: { fechaHoraLavado: { [Op.gt]: limite } },
+    include: [{ model: Vehiculo, as: 'vehiculo', attributes: ['cliente'] }],
+  });
+
+  return [...new Set(lavados.map((lavado) => lavado.vehiculo?.cliente).filter(Boolean))];
+}
+
+async function getById(id) {
+  const cliente = await Cliente.findByPk(id, {
+    include: [{ model: Persona, as: 'persona' }],
+  });
+  if (!cliente) {
+    throw new AppError('Cliente no encontrado.', 404);
+  }
+  return toClienteResponse(cliente);
+}
+
+async function create(payload) {
+  requireFields(payload, ['nombre', 'apellido', 'dni']);
+  const estadoCliente = payload.estadoCliente === undefined ? true : payload.estadoCliente;
+
+  return sequelize.transaction(async (transaction) => {
+    const persona = await Persona.create(
+      {
+        nombre: payload.nombre,
+        apellido: payload.apellido,
+        dni: payload.dni,
+        email: payload.email ?? null,
+        celular: payload.celular ?? null,
+      },
+      { transaction },
+    );
+
+    await Cliente.create({ codigoPersona: persona.codigoPersona, estadoCliente }, { transaction });
+
+    const created = await Cliente.findByPk(persona.codigoPersona, {
+      include: [{ model: Persona, as: 'persona' }],
+      transaction,
+    });
+    return toClienteResponse(created);
+  });
+}
+
+async function update(id, payload) {
+  return sequelize.transaction(async (transaction) => {
+    const cliente = await Cliente.findByPk(id, { transaction });
+    if (!cliente) {
+      throw new AppError('Cliente no encontrado.', 404);
+    }
+
+    const vehiculosDelCliente = await Vehiculo.findAll({
+      where: { cliente: id },
+      attributes: ['codigoVehi'],
+      transaction,
+    });
+    await assertSinLavadoActivo(
+      vehiculosDelCliente.map((vehiculo) => vehiculo.codigoVehi),
+      transaction,
+    );
+
+    const persona = await Persona.findByPk(id, { transaction });
+    await persona.update(
+      {
+        nombre: payload.nombre ?? persona.nombre,
+        apellido: payload.apellido ?? persona.apellido,
+        dni: payload.dni ?? persona.dni,
+        email: payload.email !== undefined ? payload.email : persona.email,
+        celular: payload.celular !== undefined ? payload.celular : persona.celular,
+      },
+      { transaction },
+    );
+
+    if (payload.estadoCliente !== undefined) {
+      await cliente.update({ estadoCliente: payload.estadoCliente }, { transaction });
+    }
+
+    const updated = await Cliente.findByPk(id, {
+      include: [{ model: Persona, as: 'persona' }],
+      transaction,
+    });
+    return toClienteResponse(updated);
+  });
+}
+
+async function remove(id) {
+  return sequelize.transaction(async (transaction) => {
+    const cliente = await Cliente.findByPk(id, { transaction });
+    if (!cliente) {
+      throw new AppError('Cliente no encontrado.', 404);
+    }
+
+    const vehiculos = await Vehiculo.findAll({ where: { cliente: id }, transaction });
+    const vehiculoIds = vehiculos.map((vehiculo) => vehiculo.codigoVehi);
+    await assertSinLavadoActivo(vehiculoIds, transaction);
+
+    const lavados = vehiculoIds.length
+      ? await Lavado.count({ where: { vehi: { [Op.in]: vehiculoIds } }, transaction })
+      : 0;
+
+    if (lavados > 0) {
+      await cliente.update({ estadoCliente: false }, { transaction });
+      await Vehiculo.update({ estadoVehi: false }, { where: { cliente: id }, transaction });
+      return;
+    }
+
+    await Vehiculo.destroy({ where: { cliente: id }, transaction });
+    await cliente.destroy({ transaction });
+    await Persona.destroy({ where: { codigoPersona: id }, transaction });
+  });
+}
+
+module.exports = { list, getById, create, update, remove };
+===== FIN ARCHIVO: src/backend/services/clienteService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/crudService.js =====
+const AppError = require('../utils/AppError');
+
+function pickFields(payload, fields) {
+  if (!fields) {
+    return payload;
+  }
+
+  return fields.reduce((acc, field) => {
+    if (payload[field] !== undefined) {
+      acc[field] = payload[field];
+    }
+    return acc;
+  }, {});
+}
+
+function createCrudService({
+  model,
+  name,
+  fields,
+  validateCreate,
+  validateUpdate,
+  buildListOptions,
+  include,
+}) {
+  const baseOptions = () => (include ? { include } : {});
+
+  async function list(query = {}) {
+    const listOptions = { ...baseOptions(), ...(buildListOptions ? buildListOptions(query) : {}) };
+    return model.findAll(listOptions);
+  }
+
+  async function getById(id) {
+    const record = await model.findByPk(id, baseOptions());
+    if (!record) {
+      throw new AppError(`${name} no encontrado.`, 404);
+    }
+    return record;
+  }
+
+  async function create(payload) {
+    const data = pickFields(payload, fields);
+    if (validateCreate) {
+      await validateCreate(data);
+    }
+    return model.create(data);
+  }
+
+  async function update(id, payload) {
+    const record = await getById(id);
+    const data = pickFields(payload, fields);
+    if (validateUpdate) {
+      await validateUpdate(data);
+    }
+    await record.update(data);
+    return record;
+  }
+
+  async function remove(id) {
+    const record = await getById(id);
+    await record.destroy();
+  }
+
+  return { list, getById, create, update, remove };
+}
+
+module.exports = { createCrudService, pickFields };
+===== FIN ARCHIVO: src/backend/services/crudService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/estadoLavadoService.js =====
+const { EstadoLavado } = require('../models');
+const { createCrudService } = require('./crudService');
+
+const estadoLavadoService = createCrudService({
+  model: EstadoLavado,
+  name: 'Estado de lavado',
+  fields: ['descripcionEstado', 'estadoLavado'],
+});
+
+module.exports = estadoLavadoService;
+===== FIN ARCHIVO: src/backend/services/estadoLavadoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/lavadoActivoService.js =====
+const { Op } = require('sequelize');
+const { EstadoLavado, Lavado } = require('../models');
+const AppError = require('../utils/AppError');
+
+const ESTADOS_BLOQUEANTES = ['En Espera', 'Lavando', 'Terminado'];
+
+async function assertSinLavadoActivo(vehiculoIds, transaction) {
+  const ids = (vehiculoIds ?? []).filter((id) => id !== undefined && id !== null);
+
+  if (ids.length === 0) {
+    return;
+  }
+
+  const estados = await EstadoLavado.findAll({
+    where: { descripcionEstado: { [Op.in]: ESTADOS_BLOQUEANTES } },
+    attributes: ['codigoEstado'],
+    transaction,
+  });
+
+  if (estados.length === 0) {
+    return;
+  }
+
+  const cantidad = await Lavado.count({
+    where: {
+      vehi: { [Op.in]: ids },
+      estado: { [Op.in]: estados.map((estado) => estado.codigoEstado) },
+    },
+    transaction,
+  });
+
+  if (cantidad > 0) {
+    throw new AppError('Vehiculo en estado de Lavado.', 409);
+  }
+}
+
+module.exports = { ESTADOS_BLOQUEANTES, assertSinLavadoActivo };
+===== FIN ARCHIVO: src/backend/services/lavadoActivoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/lavadoService.js =====
+const { Op } = require('sequelize');
+const {
+  Persona,
+  Cliente,
+  CategoriaLavado,
+  EstadoLavado,
+  Utileria,
+  MarcaVehiculo,
+  ModeloVehiculo,
+  Vehiculo,
+  Lavado,
+  Login,
+} = require('../models');
+const { createCrudService } = require('./crudService');
+const { requireFields, assertExists } = require('../utils/validators');
+const AppError = require('../utils/AppError');
+
+const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseFecha(valor, finDelDia = false) {
+  if (!FECHA_PATTERN.test(String(valor))) {
+    throw new AppError('La fecha debe tener formato YYYY-MM-DD.', 400);
+  }
+  const hora = finDelDia ? '23:59:59.999' : '00:00:00.000';
+  const fecha = new Date(`${valor}T${hora}`);
+  if (Number.isNaN(fecha.getTime())) {
+    throw new AppError('La fecha no es valida.', 400);
+  }
+  return fecha;
+}
+
+const include = [
+  {
+    model: Vehiculo,
+    as: 'vehiculo',
+    include: [
+      { model: Cliente, as: 'datosCliente', include: [{ model: Persona, as: 'persona' }] },
+      {
+        model: ModeloVehiculo,
+        as: 'modelo',
+        include: [{ model: MarcaVehiculo, as: 'marca' }],
+      },
+    ],
+  },
+  { model: CategoriaLavado, as: 'categoria' },
+  { model: EstadoLavado, as: 'datosEstado' },
+  { model: Utileria, as: 'datosUtileria' },
+];
+
+const lavadoService = createCrudService({
+  model: Lavado,
+  name: 'Lavado',
+  fields: ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria', 'detallesLavado'],
+  include,
+  buildListOptions: (query) => {
+    const where = {};
+    if (query.estado) {
+      where.estado = query.estado;
+    }
+    if (query.vehi) {
+      where.vehi = query.vehi;
+    }
+    if (query.desde || query.hasta) {
+      where.fechaHoraLavadoTerminado = {};
+      if (query.desde) {
+        where.fechaHoraLavadoTerminado[Op.gte] = parseFecha(query.desde);
+      }
+      if (query.hasta) {
+        where.fechaHoraLavadoTerminado[Op.lte] = parseFecha(query.hasta, true);
+      }
+    }
+    return { where };
+  },
+  validateCreate: async (payload) => {
+    requireFields(payload, ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria']);
+    await assertExists(Vehiculo, payload.vehi, 'El vehiculo no existe.');
+    await assertExists(
+      CategoriaLavado,
+      payload.categoriaLavado,
+      'La categoria de lavado no existe.',
+    );
+    await assertExists(Login, payload.login, 'El login no existe.');
+    await assertExists(EstadoLavado, payload.estado, 'El estado no existe.');
+    await assertExists(Utileria, payload.utileria, 'La utileria no existe.');
+  },
+  validateUpdate: async (payload) => {
+    if (payload.vehi !== undefined) {
+      await assertExists(Vehiculo, payload.vehi, 'El vehiculo no existe.');
+    }
+    if (payload.categoriaLavado !== undefined) {
+      await assertExists(
+        CategoriaLavado,
+        payload.categoriaLavado,
+        'La categoria de lavado no existe.',
+      );
+    }
+    if (payload.login !== undefined) {
+      await assertExists(Login, payload.login, 'El login no existe.');
+    }
+    if (payload.estado !== undefined) {
+      await assertExists(EstadoLavado, payload.estado, 'El estado no existe.');
+    }
+    if (payload.utileria !== undefined) {
+      await assertExists(Utileria, payload.utileria, 'La utileria no existe.');
+    }
+  },
+});
+
+module.exports = lavadoService;
+===== FIN ARCHIVO: src/backend/services/lavadoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/marcaVehiculoService.js =====
+const { CategoriaVehiculo, MarcaVehiculo } = require('../models');
+const { createCrudService } = require('./crudService');
+const { requireFields, assertExists } = require('../utils/validators');
+
+const marcaVehiculoService = createCrudService({
+  model: MarcaVehiculo,
+  name: 'Marca de vehiculo',
+  fields: ['marcaVehi', 'categoriaVehi'],
+  validateCreate: async (payload) => {
+    requireFields(payload, ['marcaVehi', 'categoriaVehi']);
+    await assertExists(CategoriaVehiculo, payload.categoriaVehi, 'La categoria de vehiculo no existe.');
+  },
+  validateUpdate: async (payload) => {
+    if (payload.categoriaVehi !== undefined) {
+      await assertExists(
+        CategoriaVehiculo,
+        payload.categoriaVehi,
+        'La categoria de vehiculo no existe.',
+      );
+    }
+  },
+});
+
+module.exports = marcaVehiculoService;
+===== FIN ARCHIVO: src/backend/services/marcaVehiculoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/modeloVehiculoService.js =====
+const { MarcaVehiculo, ModeloVehiculo } = require('../models');
+const { createCrudService } = require('./crudService');
+const { requireFields, assertExists } = require('../utils/validators');
+
+const modeloVehiculoService = createCrudService({
+  model: ModeloVehiculo,
+  name: 'Modelo de vehiculo',
+  fields: ['modeloVehi', 'marcaVehi'],
+  validateCreate: async (payload) => {
+    requireFields(payload, ['modeloVehi', 'marcaVehi']);
+    await assertExists(MarcaVehiculo, payload.marcaVehi, 'La marca de vehiculo no existe.');
+  },
+  validateUpdate: async (payload) => {
+    if (payload.marcaVehi !== undefined) {
+      await assertExists(MarcaVehiculo, payload.marcaVehi, 'La marca de vehiculo no existe.');
+    }
+  },
+});
+
+module.exports = modeloVehiculoService;
+===== FIN ARCHIVO: src/backend/services/modeloVehiculoService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/utileriaService.js =====
+const { Utileria } = require('../models');
+const { createCrudService } = require('./crudService');
+
+const utileriaService = createCrudService({
+  model: Utileria,
+  name: 'Utileria',
+  fields: ['descripcionUtileria', 'estadoUtileria'],
+});
+
+module.exports = utileriaService;
+===== FIN ARCHIVO: src/backend/services/utileriaService.js =====
+
+===== INICIO ARCHIVO: src/backend/services/vehiculoService.js =====
+const {
+  sequelize,
+  Persona,
+  Cliente,
+  CategoriaVehiculo,
+  MarcaVehiculo,
+  ModeloVehiculo,
+  Vehiculo,
+  Lavado,
+} = require('../models');
+const { createCrudService } = require('./crudService');
+const { assertSinLavadoActivo } = require('./lavadoActivoService');
+const { requireFields, assertExists } = require('../utils/validators');
+const AppError = require('../utils/AppError');
+
+const include = [
+  { model: Cliente, as: 'datosCliente', include: [{ model: Persona, as: 'persona' }] },
+  {
+    model: ModeloVehiculo,
+    as: 'modelo',
+    include: [
+      {
+        model: MarcaVehiculo,
+        as: 'marca',
+        include: [{ model: CategoriaVehiculo, as: 'categoria' }],
+      },
+    ],
+  },
+];
+
+const baseVehiculoService = createCrudService({
+  model: Vehiculo,
+  name: 'Vehiculo',
+  fields: ['patenteVehi', 'estadoVehi', 'cliente', 'modeloVehi'],
+  include,
+  buildListOptions: (query) => {
+    const where = { estadoVehi: true };
+    if (query.cliente) {
+      where.cliente = query.cliente;
+    }
+    return { where };
+  },
+  validateCreate: async (payload) => {
+    requireFields(payload, ['patenteVehi', 'estadoVehi', 'cliente', 'modeloVehi']);
+    await assertExists(Cliente, payload.cliente, 'El cliente no existe.');
+    await assertExists(ModeloVehiculo, payload.modeloVehi, 'El modelo de vehiculo no existe.');
+  },
+  validateUpdate: async (payload) => {
+    if (payload.cliente !== undefined) {
+      await assertExists(Cliente, payload.cliente, 'El cliente no existe.');
+    }
+    if (payload.modeloVehi !== undefined) {
+      await assertExists(ModeloVehiculo, payload.modeloVehi, 'El modelo de vehiculo no existe.');
+    }
+  },
+});
+
+async function update(id, payload) {
+  const vehiculo = await Vehiculo.findByPk(id);
+  if (!vehiculo) {
+    throw new AppError('Vehiculo no encontrado.', 404);
+  }
+
+  await assertSinLavadoActivo([id]);
+  return baseVehiculoService.update(id, payload);
+}
+
+async function remove(id) {
+  return sequelize.transaction(async (transaction) => {
+    const vehiculo = await Vehiculo.findByPk(id, { transaction });
+    if (!vehiculo) {
+      throw new AppError('Vehiculo no encontrado.', 404);
+    }
+
+    await assertSinLavadoActivo([id], transaction);
+
+    const lavados = await Lavado.count({ where: { vehi: id }, transaction });
+
+    if (lavados > 0) {
+      await vehiculo.update({ estadoVehi: false }, { transaction });
+      return;
+    }
+
+    await vehiculo.destroy({ transaction });
+  });
+}
+
+module.exports = { ...baseVehiculoService, update, remove };
+===== FIN ARCHIVO: src/backend/services/vehiculoService.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/helpers/auth.js =====
+const request = require('supertest');
+const { Usuario, Login } = require('../../models');
+const { hashPassword } = require('../../utils/password');
+
+const TEST_USER = 'test-auth-user';
+const TEST_PASSWORD = 'test-password';
+
+async function createTestUser() {
+  await Usuario.destroy({ where: { nombreUsuario: TEST_USER } });
+  return Usuario.create({
+    nombreUsuario: TEST_USER,
+    'contraseña': hashPassword(TEST_PASSWORD),
+  });
+}
+
+async function loginAgent(app) {
+  const user = await createTestUser();
+  const agent = request.agent(app);
+  const res = await agent
+    .post('/api/auth/login')
+    .send({ usuario: TEST_USER, contrasena: TEST_PASSWORD });
+
+  if (res.status !== 200) {
+    throw new Error(`No se pudo autenticar en pruebas (status ${res.status})`);
+  }
+
+  return { agent, user };
+}
+
+async function removeTestUser(user) {
+  if (!user) {
+    return;
+  }
+  await Login.destroy({ where: { usuario: user.codigoUsuario } });
+  await Usuario.destroy({ where: { codigoUsuario: user.codigoUsuario } });
+}
+
+module.exports = { createTestUser, loginAgent, removeTestUser, TEST_USER, TEST_PASSWORD };
+===== FIN ARCHIVO: src/backend/tests/helpers/auth.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/helpers/fixtures.js =====
+const {
+  Persona,
+  Cliente,
+  CategoriaVehiculo,
+  MarcaVehiculo,
+  ModeloVehiculo,
+  CategoriaLavado,
+  EstadoLavado,
+  Utileria,
+  Usuario,
+  Login,
+} = require('../../models');
+
+function suffix() {
+  return `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+}
+
+async function createBaseFixtures() {
+  const tag = suffix();
+
+  const categoria = await CategoriaVehiculo.create({ categoriaVehi: `Categoria ${tag}` });
+  const marca = await MarcaVehiculo.create({
+    marcaVehi: `Marca ${tag}`,
+    categoriaVehi: categoria.codigoCategoriaVehi,
+  });
+  const modelo = await ModeloVehiculo.create({
+    modeloVehi: `Modelo ${tag}`,
+    marcaVehi: marca.codigoMarcaVehi,
+  });
+  const categoriaLavado = await CategoriaLavado.create({ descripcionLavado: `Lavado ${tag}` });
+  const estadoLavado = await EstadoLavado.create({
+    descripcionEstado: `Activo ${tag}`,
+    estadoLavado: true,
+  });
+  const estadoLavadoAlt = await EstadoLavado.create({
+    descripcionEstado: `Finalizado ${tag}`,
+    estadoLavado: true,
+  });
+  const utileria = await Utileria.create({
+    descripcionUtileria: `Utileria ${tag}`,
+    estadoUtileria: true,
+  });
+
+  const persona = await Persona.create({
+    nombre: 'Ana',
+    apellido: 'Perez',
+    dni: 12345678,
+    email: `ana-${tag}@example.com`,
+    celular: 5551234,
+  });
+  await Cliente.create({ codigoPersona: persona.codigoPersona, estadoCliente: true });
+
+  const usuario = await Usuario.create({ nombreUsuario: `admin-${tag}`, 'contraseña': 'hash' });
+  const login = await Login.create({ usuario: usuario.codigoUsuario });
+
+  return {
+    tag,
+    categoriaVehiculoId: categoria.codigoCategoriaVehi,
+    marcaVehiculoId: marca.codigoMarcaVehi,
+    modeloVehiculoId: modelo.codigoModeloVehi,
+    categoriaLavadoId: categoriaLavado.codigoCategoriaLavado,
+    estadoLavadoId: estadoLavado.codigoEstado,
+    estadoLavadoAltId: estadoLavadoAlt.codigoEstado,
+    utileriaId: utileria.codigoUtileria,
+    clienteId: persona.codigoPersona,
+    usuarioId: usuario.codigoUsuario,
+    loginId: login.codigoLogin,
+  };
+}
+
+async function removeBaseFixtures(ids) {
+  if (!ids) {
+    return;
+  }
+
+  await Login.destroy({ where: { codigoLogin: ids.loginId } });
+  await Usuario.destroy({ where: { codigoUsuario: ids.usuarioId } });
+  await CategoriaLavado.destroy({
+    where: { codigoCategoriaLavado: ids.categoriaLavadoId },
+  });
+  await Utileria.destroy({ where: { codigoUtileria: ids.utileriaId } });
+  await EstadoLavado.destroy({ where: { codigoEstado: ids.estadoLavadoId } });
+  await EstadoLavado.destroy({ where: { codigoEstado: ids.estadoLavadoAltId } });
+  await ModeloVehiculo.destroy({ where: { codigoModeloVehi: ids.modeloVehiculoId } });
+  await MarcaVehiculo.destroy({ where: { codigoMarcaVehi: ids.marcaVehiculoId } });
+  await CategoriaVehiculo.destroy({
+    where: { codigoCategoriaVehi: ids.categoriaVehiculoId },
+  });
+  await Cliente.destroy({ where: { codigoPersona: ids.clienteId } });
+  await Persona.destroy({ where: { codigoPersona: ids.clienteId } });
+}
+
+module.exports = { createBaseFixtures, removeBaseFixtures, suffix };
+===== FIN ARCHIVO: src/backend/tests/helpers/fixtures.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/adminBootstrap.test.js =====
+const request = require('supertest');
+const app = require('../app');
+const { sequelize, Usuario, Login } = require('../models');
+const { ensureDefaultAdmin } = require('../services/adminService');
+const { verifyPassword } = require('../utils/password');
+
+const TEST_ADMIN_USER = `admin-test-${Date.now()}`;
+const TEST_ADMIN_PASSWORD = 'bootstrap-pass';
+
+async function cleanup() {
+  const user = await Usuario.findOne({ where: { nombreUsuario: TEST_ADMIN_USER } });
+  if (!user) {
+    return;
+  }
+  await Login.destroy({ where: { usuario: user.codigoUsuario } });
+  await Usuario.destroy({ where: { codigoUsuario: user.codigoUsuario } });
+}
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+  await cleanup();
+});
+
+afterAll(async () => {
+  await cleanup();
+  await sequelize.close();
+});
+
+describe('bootstrap de la cuenta administrador', () => {
+  test('crea la cuenta si no existe, con hash, y permite el login', async () => {
+    const result = await ensureDefaultAdmin({
+      nombreUsuario: TEST_ADMIN_USER,
+      contrasena: TEST_ADMIN_PASSWORD,
+    });
+
+    expect(result.created).toBe(true);
+
+    const user = await Usuario.findOne({ where: { nombreUsuario: TEST_ADMIN_USER } });
+    expect(user).not.toBeNull();
+    expect(user.get('contraseña')).not.toBe(TEST_ADMIN_PASSWORD);
+    expect(verifyPassword(TEST_ADMIN_PASSWORD, user.get('contraseña'))).toBe(true);
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: TEST_ADMIN_USER, contrasena: TEST_ADMIN_PASSWORD });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.nombreUsuario).toBe(TEST_ADMIN_USER);
+    expect(JSON.stringify(res.body)).not.toContain(TEST_ADMIN_PASSWORD);
+  });
+
+  test('no duplica ni sobrescribe si la cuenta ya existe', async () => {
+    const result = await ensureDefaultAdmin({
+      nombreUsuario: TEST_ADMIN_USER,
+      contrasena: 'otra-clave',
+    });
+
+    expect(result.created).toBe(false);
+
+    const count = await Usuario.count({ where: { nombreUsuario: TEST_ADMIN_USER } });
+    expect(count).toBe(1);
+
+    const user = await Usuario.findOne({ where: { nombreUsuario: TEST_ADMIN_USER } });
+    expect(verifyPassword(TEST_ADMIN_PASSWORD, user.get('contraseña'))).toBe(true);
+    expect(verifyPassword('otra-clave', user.get('contraseña'))).toBe(false);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/adminBootstrap.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/app.test.js =====
+const request = require('supertest');
+const express = require('express');
+const app = require('../app');
+const errorHandler = require('../middlewares/errorHandler');
+
+describe('app base', () => {
+  test('GET /api/health responde 200 con estado ok', async () => {
+    const res = await request(app).get('/api/health');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, data: { status: 'ok' } });
+  });
+
+  test('ruta inexistente responde 404 con formato de error', async () => {
+    const res = await request(app).get('/api/desconocido');
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.message).toBeDefined();
+  });
+
+  test('error inesperado responde 500 con mensaje seguro', async () => {
+    const testApp = express();
+    testApp.get('/boom', () => {
+      throw new Error('detalle interno secreto');
+    });
+    testApp.use(errorHandler);
+
+    const res = await request(testApp).get('/boom');
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      success: false,
+      error: { message: 'Error interno del servidor' },
+    });
+    expect(JSON.stringify(res.body)).not.toContain('detalle interno secreto');
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/app.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/auth.test.js =====
+const request = require('supertest');
+const app = require('../app');
+const { sequelize, Usuario, Login } = require('../models');
+const { hashPassword } = require('../utils/password');
+
+const USER = `auth-user-${Date.now()}`;
+const PASSWORD = 'secret123';
+let userId;
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+  const user = await Usuario.create({
+    nombreUsuario: USER,
+    'contraseña': hashPassword(PASSWORD),
+  });
+  userId = user.codigoUsuario;
+});
+
+afterAll(async () => {
+  await Login.destroy({ where: { usuario: userId } });
+  await Usuario.destroy({ where: { codigoUsuario: userId } });
+  await sequelize.close();
+});
+
+describe('autenticacion', () => {
+  test('login valido responde 200 con cookie HttpOnly y sin contraseña', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: USER, contrasena: PASSWORD });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.nombreUsuario).toBe(USER);
+    expect(res.body.data.codigoLogin).toBeDefined();
+    expect(JSON.stringify(res.body)).not.toContain(PASSWORD);
+
+    const cookie = (res.headers['set-cookie'] || []).join(';');
+    expect(cookie).toContain('HttpOnly');
+  });
+
+  test('login con usuario inexistente responde 401', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: 'usuario-inexistente', contrasena: 'x' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('login con contraseña incorrecta responde 401', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: USER, contrasena: 'incorrecta' });
+
+    expect(res.status).toBe(401);
+  });
+
+  test('no se crea sesion ante credenciales invalidas', async () => {
+    const agent = request.agent(app);
+    const login = await agent
+      .post('/api/auth/login')
+      .send({ usuario: USER, contrasena: 'incorrecta' });
+    expect(login.status).toBe(401);
+
+    const sessionRes = await agent.get('/api/auth/session');
+    expect(sessionRes.status).toBe(401);
+  });
+
+  test('session responde 401 sin sesion y 200 con sesion', async () => {
+    const agent = request.agent(app);
+
+    const before = await agent.get('/api/auth/session');
+    expect(before.status).toBe(401);
+
+    await agent.post('/api/auth/login').send({ usuario: USER, contrasena: PASSWORD });
+    const after = await agent.get('/api/auth/session');
+
+    expect(after.status).toBe(200);
+    expect(after.body.data.authenticated).toBe(true);
+    expect(JSON.stringify(after.body)).not.toContain(PASSWORD);
+  });
+
+  test('logout responde 204 y luego el endpoint protegido responde 401', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ usuario: USER, contrasena: PASSWORD });
+
+    const logout = await agent.post('/api/auth/logout');
+    expect(logout.status).toBe(204);
+
+    const protectedRes = await agent.get('/api/clientes');
+    expect(protectedRes.status).toBe(401);
+  });
+
+  test('un endpoint CRUD sin sesion responde 401', async () => {
+    const res = await request(app).get('/api/clientes');
+    expect(res.status).toBe(401);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/auth.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/catalogSeed.test.js =====
+const { sequelize, CategoriaLavado, EstadoLavado, Utileria } = require('../models');
+const {
+  ensureLavadoCatalogs,
+  CATEGORIAS,
+  ESTADOS,
+  UTILERIAS,
+} = require('../services/catalogSeedService');
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+});
+
+afterAll(async () => {
+  await sequelize.close();
+});
+
+describe('seed de catalogos de lavado', () => {
+  test('crea los catalogos base si faltan', async () => {
+    await ensureLavadoCatalogs();
+
+    expect(await CategoriaLavado.count()).toBeGreaterThanOrEqual(CATEGORIAS.length);
+    expect(await EstadoLavado.count()).toBeGreaterThanOrEqual(ESTADOS.length);
+    expect(await Utileria.count()).toBeGreaterThanOrEqual(UTILERIAS.length);
+  });
+
+  test('es idempotente', async () => {
+    const created = await ensureLavadoCatalogs();
+
+    expect(created).toBe(0);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/catalogSeed.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/clientes.test.js =====
+const app = require('../app');
+const { sequelize, Persona, Cliente, Vehiculo, Lavado, EstadoLavado } = require('../models');
+const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
+const { createBaseFixtures, removeBaseFixtures } = require('./helpers/fixtures');
+const { loginAgent, removeTestUser } = require('./helpers/auth');
+
+const createdClientes = [];
+let agent;
+let authUser;
+let estadoEnEsperaId;
+let estadoEntregadoId;
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+  await ensureLavadoCatalogs();
+  estadoEnEsperaId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'En Espera' } })
+  ).codigoEstado;
+  estadoEntregadoId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'Entregado' } })
+  ).codigoEstado;
+  ({ agent, user: authUser } = await loginAgent(app));
+});
+
+afterEach(async () => {
+  while (createdClientes.length) {
+    const id = createdClientes.pop();
+    await Vehiculo.destroy({ where: { cliente: id } });
+    await Cliente.destroy({ where: { codigoPersona: id } });
+    await Persona.destroy({ where: { codigoPersona: id } });
+  }
+});
+
+afterAll(async () => {
+  await removeTestUser(authUser);
+  await sequelize.close();
+});
+
+describe('CRUD de clientes', () => {
+  test('POST /api/clientes crea un cliente (201)', async () => {
+    const res = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Juan', apellido: 'Diaz', dni: 22222222 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.nombre).toBe('Juan');
+    createdClientes.push(res.body.data.codigoPersona);
+  });
+
+  test('POST /api/clientes con datos faltantes responde 400', async () => {
+    const res = await agent.post('/api/clientes').send({ nombre: 'SinApellido' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('GET /api/clientes lista clientes (200)', async () => {
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Lista', apellido: 'Test', dni: 33333333 });
+    createdClientes.push(create.body.data.codigoPersona);
+
+    const res = await agent.get('/api/clientes');
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  test('GET /api/clientes?buscar filtra por nombre, apellido o dni (200)', async () => {
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Buscable', apellido: 'ApellidoUnico', dni: 12345678 });
+    createdClientes.push(create.body.data.codigoPersona);
+
+    const porNombre = await agent.get('/api/clientes?buscar=Buscab');
+    expect(porNombre.status).toBe(200);
+    expect(porNombre.body.data.some((c) => c.nombre === 'Buscable')).toBe(true);
+
+    const porApellido = await agent.get('/api/clientes?buscar=ApellidoUnic');
+    expect(porApellido.status).toBe(200);
+    expect(porApellido.body.data.some((c) => c.apellido === 'ApellidoUnico')).toBe(true);
+
+    const porDni = await agent.get('/api/clientes?buscar=123456');
+    expect(porDni.status).toBe(200);
+    expect(porDni.body.data.some((c) => String(c.dni) === '12345678')).toBe(true);
+  });
+
+  test('GET /api/clientes?buscar sin coincidencias devuelve lista vacía (200)', async () => {
+    const res = await agent.get('/api/clientes?buscar=zzzzzznoexiste');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+
+  test('los clientes inactivos se excluyen del listado y la búsqueda pero se obtienen por id', async () => {
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Inactivo', apellido: 'Test', dni: 88888888 });
+    const clienteId = create.body.data.codigoPersona;
+    createdClientes.push(clienteId);
+
+    await agent.put(`/api/clientes/${clienteId}`).send({ estadoCliente: false });
+
+    const listado = await agent.get('/api/clientes');
+    expect(listado.body.data.some((c) => c.codigoPersona === clienteId)).toBe(false);
+
+    const busqueda = await agent.get('/api/clientes?buscar=88888888');
+    expect(busqueda.body.data.some((c) => c.codigoPersona === clienteId)).toBe(false);
+
+    const porId = await agent.get(`/api/clientes/${clienteId}`);
+    expect(porId.status).toBe(200);
+    expect(porId.body.data.codigoPersona).toBe(clienteId);
+  });
+
+  test('GET /api/clientes/:id inexistente responde 404', async () => {
+    const res = await agent.get('/api/clientes/999999999');
+
+    expect(res.status).toBe(404);
+  });
+
+  test('PUT /api/clientes/:id actualiza el cliente (200)', async () => {
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Edit', apellido: 'Me', dni: 44444444 });
+    const id = create.body.data.codigoPersona;
+    createdClientes.push(id);
+
+    const res = await agent.put(`/api/clientes/${id}`).send({ nombre: 'Editado' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.nombre).toBe('Editado');
+  });
+
+  test('DELETE /api/clientes/:id responde 204', async () => {
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Del', apellido: 'Me', dni: 55555555 });
+    const id = create.body.data.codigoPersona;
+
+    const res = await agent.delete(`/api/clientes/${id}`);
+
+    expect(res.status).toBe(204);
+  });
+
+  test('DELETE /api/clientes/:id elimina también sus vehículos (204)', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'ConVeh', apellido: 'Test', dni: 66666666 });
+    const clienteId = create.body.data.codigoPersona;
+
+    await Vehiculo.create({
+      patenteVehi: 'ZZ999ZZ',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(204);
+    expect(await Vehiculo.count({ where: { cliente: clienteId } })).toBe(0);
+
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con vehículos con lavados aplica baja lógica (204)', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'ConLavado', apellido: 'Test', dni: 77777777 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'YY888YY',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      fechaHoraLavado: new Date(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(204);
+
+    const clienteDb = await Cliente.findByPk(clienteId);
+    const vehiculoDb = await Vehiculo.findByPk(vehiculo.codigoVehi);
+    expect(clienteDb).not.toBeNull();
+    expect(Boolean(clienteDb.estadoCliente)).toBe(false);
+    expect(vehiculoDb).not.toBeNull();
+    expect(Boolean(vehiculoDb.estadoVehi)).toBe(false);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con lavados en otro estado aplica baja lógica (204)', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'ConLavadoAlt', apellido: 'Test', dni: 88888888 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'ZZ777ZZ',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      fechaHoraLavado: new Date(),
+      estado: ids.estadoLavadoAltId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(204);
+
+    const clienteDb = await Cliente.findByPk(clienteId);
+    const vehiculoDb = await Vehiculo.findByPk(vehiculo.codigoVehi);
+    expect(clienteDb).not.toBeNull();
+    expect(Boolean(clienteDb.estadoCliente)).toBe(false);
+    expect(vehiculoDb).not.toBeNull();
+    expect(Boolean(vehiculoDb.estadoVehi)).toBe(false);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('GET /api/clientes?sinLavadosDesde excluye clientes con lavados posteriores (200)', async () => {
+    const ids = await createBaseFixtures();
+
+    const conLavado = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Vuelve', apellido: 'Tarde', dni: 99999991 });
+    const sinLavado = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'NoVuelve', apellido: 'Nunca', dni: 99999992 });
+    const conLavadoId = conLavado.body.data.codigoPersona;
+    const sinLavadoId = sinLavado.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'SD123SD',
+      estadoVehi: true,
+      cliente: conLavadoId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    const lavado = await Lavado.create({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    await lavado.update({ fechaHoraLavado: new Date('2026-05-10T10:00:00') });
+
+    const res = await agent.get('/api/clientes?sinLavadosDesde=2026-05-01');
+
+    expect(res.status).toBe(200);
+    const codigos = res.body.data.map((cliente) => cliente.codigoPersona);
+    expect(codigos).toContain(sinLavadoId);
+    expect(codigos).not.toContain(conLavadoId);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: conLavadoId } });
+    await Persona.destroy({ where: { codigoPersona: conLavadoId } });
+    await Cliente.destroy({ where: { codigoPersona: sinLavadoId } });
+    await Persona.destroy({ where: { codigoPersona: sinLavadoId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('PUT /api/clientes/:id con vehiculo en lavado activo responde 409', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Bloq', apellido: 'Edit', dni: 10101010 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'BE123BE',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.put(`/api/clientes/${clienteId}`).send({ nombre: 'Cambiado' });
+
+    expect(res.status).toBe(409);
+    const enDb = await Persona.findByPk(clienteId);
+    expect(enDb.nombre).toBe('Bloq');
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con vehiculo en lavado activo responde 409', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Bloq', apellido: 'Baja', dni: 20202020 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'BB456BB',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(409);
+    const clienteDb = await Cliente.findByPk(clienteId);
+    expect(Boolean(clienteDb.estadoCliente)).toBe(true);
+    const vehiculoDb = await Vehiculo.findByPk(vehiculo.codigoVehi);
+    expect(Boolean(vehiculoDb.estadoVehi)).toBe(true);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+
+  test('DELETE /api/clientes/:id con lavado entregado aplica baja logica (204)', async () => {
+    const ids = await createBaseFixtures();
+    const create = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Entregado', apellido: 'Baja', dni: 30303030 });
+    const clienteId = create.body.data.codigoPersona;
+
+    const vehiculo = await Vehiculo.create({
+      patenteVehi: 'EE789EE',
+      estadoVehi: true,
+      cliente: clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    await Lavado.create({
+      estado: estadoEntregadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculo.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/clientes/${clienteId}`);
+
+    expect(res.status).toBe(204);
+    const clienteDb = await Cliente.findByPk(clienteId);
+    expect(clienteDb).not.toBeNull();
+    expect(Boolean(clienteDb.estadoCliente)).toBe(false);
+
+    await Lavado.destroy({ where: { vehi: vehiculo.codigoVehi } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculo.codigoVehi } });
+    await Cliente.destroy({ where: { codigoPersona: clienteId } });
+    await Persona.destroy({ where: { codigoPersona: clienteId } });
+    await removeBaseFixtures(ids);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/clientes.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/lavados.test.js =====
+const app = require('../app');
+const { sequelize, Vehiculo, Lavado, CategoriaLavado } = require('../models');
+const { createBaseFixtures, removeBaseFixtures, suffix } = require('./helpers/fixtures');
+const { loginAgent, removeTestUser } = require('./helpers/auth');
+
+let ids;
+let vehiculoId;
+let agent;
+let authUser;
+const createdLavados = [];
+const createdCategoriasLavado = [];
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+  ids = await createBaseFixtures();
+  const vehiculo = await Vehiculo.create({
+    patenteVehi: 'LL001AA',
+    estadoVehi: true,
+    cliente: ids.clienteId,
+    modeloVehi: ids.modeloVehiculoId,
+  });
+  vehiculoId = vehiculo.codigoVehi;
+  ({ agent, user: authUser } = await loginAgent(app));
+});
+
+afterEach(async () => {
+  while (createdLavados.length) {
+    const id = createdLavados.pop();
+    await Lavado.destroy({ where: { codigoLavado: id } });
+  }
+  while (createdCategoriasLavado.length) {
+    const id = createdCategoriasLavado.pop();
+    await Lavado.destroy({ where: { categoriaLavado: id } });
+    await CategoriaLavado.destroy({ where: { codigoCategoriaLavado: id } });
+  }
+});
+
+afterAll(async () => {
+  await Lavado.destroy({ where: { vehi: vehiculoId } });
+  await Vehiculo.destroy({ where: { codigoVehi: vehiculoId } });
+  await removeTestUser(authUser);
+  await removeBaseFixtures(ids);
+  await sequelize.close();
+});
+
+describe('CRUD de lavados y categoría de lavado', () => {
+  test('POST /api/lavados crea un lavado (201) sin cliente directo', async () => {
+    const res = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.codigoLavado).toBeDefined();
+    expect(res.body.data.cliente).toBeUndefined();
+    createdLavados.push(res.body.data.codigoLavado);
+  });
+
+  test('POST /api/lavados con vehículo inexistente responde 400', async () => {
+    const res = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: 999999999,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/lavados con estado inexistente responde 400', async () => {
+    const res = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: 999999999,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/lavados con utilería inexistente responde 400', async () => {
+    const res = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: 999999999,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('GET /api/lavados lista lavados (200)', async () => {
+    const res = await agent.get('/api/lavados');
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  test('GET /api/lavados?estado=<codigo> filtra por estado (200)', async () => {
+    const create = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(create.body.data.codigoLavado);
+
+    const res = await agent.get(`/api/lavados?estado=${ids.estadoLavadoId}`);
+
+    expect(res.status).toBe(200);
+    expect(
+      res.body.data.every((lavado) => String(lavado.estado) === String(ids.estadoLavadoId)),
+    ).toBe(true);
+  });
+
+  test('GET /api/lavados?vehi=<codigo> filtra por vehículo (200)', async () => {
+    const create = await agent.post('/api/lavados').send({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(create.body.data.codigoLavado);
+
+    const res = await agent.get(`/api/lavados?vehi=${vehiculoId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.every((lavado) => String(lavado.vehi) === String(vehiculoId))).toBe(true);
+  });
+
+  test('GET /api/lavados/:id inexistente responde 404', async () => {
+    const res = await agent.get('/api/lavados/999999999');
+
+    expect(res.status).toBe(404);
+  });
+
+  test('PUT /api/lavados/:id actualiza el estado (200)', async () => {
+    const create = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    const id = create.body.data.codigoLavado;
+    createdLavados.push(id);
+
+    const res = await agent
+      .put(`/api/lavados/${id}`)
+      .send({ estado: ids.estadoLavadoAltId });
+
+    expect(res.status).toBe(200);
+    expect(String(res.body.data.estado)).toBe(String(ids.estadoLavadoAltId));
+  });
+
+  test('DELETE /api/lavados/:id no está permitido (405) y el lavado permanece', async () => {
+    const create = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    const id = create.body.data.codigoLavado;
+    createdLavados.push(id);
+
+    const res = await agent.delete(`/api/lavados/${id}`);
+
+    expect(res.status).toBe(405);
+    expect(await Lavado.findByPk(id)).not.toBeNull();
+  });
+
+  test('POST /api/categorias-lavado crea una categoría (201)', async () => {
+    const res = await agent
+      .post('/api/categorias-lavado')
+      .send({ descripcionLavado: `Lavado ${suffix()}` });
+
+    expect(res.status).toBe(201);
+    createdCategoriasLavado.push(res.body.data.codigoCategoriaLavado);
+  });
+
+  test('DELETE /api/categorias-lavado/:id con lavados asociados responde 409', async () => {
+    const categoria = await agent
+      .post('/api/categorias-lavado')
+      .send({ descripcionLavado: `ConLavado ${suffix()}` });
+    const categoriaId = categoria.body.data.codigoCategoriaLavado;
+    createdCategoriasLavado.push(categoriaId);
+
+    const create = await agent.post('/api/lavados').send({
+      fechaHoraLavado: new Date().toISOString(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: categoriaId,
+      login: ids.loginId,
+    });
+    createdLavados.push(create.body.data.codigoLavado);
+
+    const res = await agent.delete(`/api/categorias-lavado/${categoriaId}`);
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('marcas de tiempo del lavado', () => {
+  function crearLavado(extra = {}) {
+    return agent.post('/api/lavados').send({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+      ...extra,
+    });
+  }
+
+  test('el backend genera fechaHoraLavado y fechaHoraLavadoTerminado', async () => {
+    const res = await crearLavado();
+    createdLavados.push(res.body.data.codigoLavado);
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.fechaHoraLavado).toBeDefined();
+    expect(res.body.data.fechaHoraLavadoTerminado).toBeDefined();
+    expect(res.body.data.fechaHoraLavadoTerminado).toBe(res.body.data.fechaHoraLavado);
+  });
+
+  test('ignora las marcas enviadas por el cliente', async () => {
+    const res = await crearLavado({
+      fechaHoraLavado: '2000-01-01T00:00:00.000Z',
+      fechaHoraLavadoTerminado: '2000-01-01T00:00:00.000Z',
+    });
+    createdLavados.push(res.body.data.codigoLavado);
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.fechaHoraLavado).not.toBe('2000-01-01T00:00:00.000Z');
+    expect(res.body.data.fechaHoraLavadoTerminado).not.toBe('2000-01-01T00:00:00.000Z');
+  });
+
+  test('cambiar el estado actualiza fechaHoraLavadoTerminado y conserva fechaHoraLavado', async () => {
+    const create = await crearLavado();
+    const id = create.body.data.codigoLavado;
+    createdLavados.push(id);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const res = await agent.put(`/api/lavados/${id}`).send({ estado: ids.estadoLavadoAltId });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.fechaHoraLavado).toBe(create.body.data.fechaHoraLavado);
+    expect(new Date(res.body.data.fechaHoraLavadoTerminado).getTime()).toBeGreaterThan(
+      new Date(create.body.data.fechaHoraLavadoTerminado).getTime(),
+    );
+  });
+
+  test('actualizar sin cambiar el estado conserva fechaHoraLavadoTerminado', async () => {
+    const create = await crearLavado();
+    const id = create.body.data.codigoLavado;
+    createdLavados.push(id);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const res = await agent
+      .put(`/api/lavados/${id}`)
+      .send({ detallesLavado: 'sin cambio de estado' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.fechaHoraLavado).toBe(create.body.data.fechaHoraLavado);
+    expect(res.body.data.fechaHoraLavadoTerminado).toBe(
+      create.body.data.fechaHoraLavadoTerminado,
+    );
+  });
+});
+
+describe('filtros por fecha de entrega', () => {
+  function crearLavado() {
+    return agent.post('/api/lavados').send({
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+  }
+
+  async function fijarEntrega(id, fecha) {
+    const lavado = await Lavado.findByPk(id);
+    await lavado.update({ fechaHoraLavadoTerminado: new Date(fecha) });
+  }
+
+  test('GET /api/lavados?desde&hasta filtra por fecha de entrega (200)', async () => {
+    const dentro = await crearLavado();
+    const fuera = await crearLavado();
+    createdLavados.push(dentro.body.data.codigoLavado, fuera.body.data.codigoLavado);
+
+    await fijarEntrega(dentro.body.data.codigoLavado, '2026-01-15T10:00:00');
+    await fijarEntrega(fuera.body.data.codigoLavado, '2026-03-20T10:00:00');
+
+    const res = await agent.get(
+      `/api/lavados?vehi=${vehiculoId}&desde=2026-01-01&hasta=2026-01-31`,
+    );
+
+    expect(res.status).toBe(200);
+    const codigos = res.body.data.map((lavado) => lavado.codigoLavado);
+    expect(codigos).toContain(dentro.body.data.codigoLavado);
+    expect(codigos).not.toContain(fuera.body.data.codigoLavado);
+  });
+
+  test('GET /api/lavados con fecha invalida responde 400', async () => {
+    const res = await agent.get('/api/lavados?desde=no-es-fecha');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/lavados.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/models.test.js =====
+const {
+  sequelize,
+  Persona,
+  Cliente,
+  Usuario,
+  Vehiculo,
+  Lavado,
+  EstadoLavado,
+  Utileria,
+} = require('../models');
+const { createBaseFixtures, removeBaseFixtures } = require('./helpers/fixtures');
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+});
+
+afterAll(async () => {
+  await sequelize.close();
+});
+
+describe('modelos Sequelize', () => {
+  test('mapea tabla y columnas de Persona', async () => {
+    const persona = await Persona.create({
+      nombre: 'Luis',
+      apellido: 'Gomez',
+      dni: 111,
+      email: null,
+      celular: null,
+    });
+
+    expect(Persona.tableName).toBe('Persona');
+    expect(persona.codigoPersona).toBeDefined();
+    expect(persona.get('nombre')).toBe('Luis');
+
+    await persona.destroy();
+  });
+
+  test('mapea la columna [contraseña] de Usuario', async () => {
+    const usuario = await Usuario.create({ nombreUsuario: `u-${Date.now()}`, 'contraseña': 'hash' });
+    const fetched = await Usuario.findByPk(usuario.codigoUsuario);
+
+    expect(fetched.get('contraseña')).toBe('hash');
+
+    await usuario.destroy();
+  });
+
+  test('navega Lavado -> Vehiculo -> Cliente y Cliente -> Persona', async () => {
+    const ids = await createBaseFixtures();
+    let vehiculo;
+    let lavado;
+
+    try {
+      vehiculo = await Vehiculo.create({
+        patenteVehi: 'AA123BB',
+        estadoVehi: true,
+        cliente: ids.clienteId,
+        modeloVehi: ids.modeloVehiculoId,
+      });
+
+      lavado = await Lavado.create({
+        fechaHoraLavado: new Date(),
+        estado: ids.estadoLavadoId,
+        utileria: ids.utileriaId,
+        vehi: vehiculo.codigoVehi,
+        categoriaLavado: ids.categoriaLavadoId,
+        login: ids.loginId,
+      });
+
+      const found = await Lavado.findByPk(lavado.codigoLavado, {
+        include: [
+          {
+            model: Vehiculo,
+            as: 'vehiculo',
+            include: [
+              { model: Cliente, as: 'datosCliente', include: [{ model: Persona, as: 'persona' }] },
+            ],
+          },
+          { model: EstadoLavado, as: 'datosEstado' },
+          { model: Utileria, as: 'datosUtileria' },
+        ],
+      });
+
+      expect(found.vehiculo.datosCliente.persona.nombre).toBe('Ana');
+      expect(String(found.datosEstado.codigoEstado)).toBe(String(ids.estadoLavadoId));
+      expect(String(found.datosUtileria.codigoUtileria)).toBe(String(ids.utileriaId));
+
+      const cliente = await Cliente.findByPk(ids.clienteId, {
+        include: [{ model: Persona, as: 'persona' }],
+      });
+      expect(cliente.persona.nombre).toBe('Ana');
+    } finally {
+      if (lavado) {
+        await lavado.destroy();
+      }
+      if (vehiculo) {
+        await vehiculo.destroy();
+      }
+      await removeBaseFixtures(ids);
+    }
+  });
+
+  test('Lavado no declara asociación directa hacia Cliente', () => {
+    const targets = Object.values(Lavado.associations).map((assoc) => assoc.target.name);
+    const aliases = Object.keys(Lavado.associations);
+
+    expect(targets).not.toContain('Cliente');
+    expect(aliases).toEqual(
+      expect.arrayContaining(['vehiculo', 'categoria', 'datosLogin', 'datosEstado', 'datosUtileria']),
+    );
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/models.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/password.test.js =====
+const { hashPassword, verifyPassword } = require('../utils/password');
+
+describe('utilidad de hash de contraseñas', () => {
+  test('verifica la contraseña correcta', () => {
+    const hash = hashPassword('123456');
+
+    expect(hash.startsWith('scrypt$')).toBe(true);
+    expect(verifyPassword('123456', hash)).toBe(true);
+  });
+
+  test('rechaza la contraseña incorrecta', () => {
+    const hash = hashPassword('123456');
+
+    expect(verifyPassword('654321', hash)).toBe(false);
+  });
+
+  test('rechaza un valor almacenado inválido', () => {
+    expect(verifyPassword('123456', 'texto-plano')).toBe(false);
+    expect(verifyPassword('123456', undefined)).toBe(false);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/password.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/setupEnv.js =====
+require('dotenv').config();
+
+function setDefault(key, value) {
+  if (process.env[key] === undefined) {
+    process.env[key] = value;
+  }
+}
+
+setDefault('DB_SERVER', 'localhost');
+setDefault('DB_NAME', 'DataBaseLavadero');
+setDefault('DB_USER', 'test');
+setDefault('DB_PASSWORD', 'test');
+setDefault('DB_AUTH_TYPE', 'default');
+setDefault('DB_INSTANCE', 'SQLEXPRESS01');
+setDefault('SESSION_SECRET', 'test-session-secret');
+setDefault('PORT', '0');
+===== FIN ARCHIVO: src/backend/tests/setupEnv.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/utilerias.test.js =====
+const app = require('../app');
+const { sequelize, Utileria } = require('../models');
+const { createBaseFixtures, removeBaseFixtures } = require('./helpers/fixtures');
+const { loginAgent, removeTestUser } = require('./helpers/auth');
+
+let ids;
+let agent;
+let authUser;
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+  ids = await createBaseFixtures();
+  ({ agent, user: authUser } = await loginAgent(app));
+});
+
+afterAll(async () => {
+  await removeTestUser(authUser);
+  await removeBaseFixtures(ids);
+  await sequelize.close();
+});
+
+describe('utilerias', () => {
+  test('GET /api/utilerias lista las utilerias (200)', async () => {
+    const res = await agent.get('/api/utilerias');
+
+    expect(res.status).toBe(200);
+    expect(
+      res.body.data.some((utileria) => String(utileria.codigoUtileria) === String(ids.utileriaId)),
+    ).toBe(true);
+  });
+
+  test('PUT /api/utilerias/:id actualiza estadoUtileria (200)', async () => {
+    const res = await agent
+      .put(`/api/utilerias/${ids.utileriaId}`)
+      .send({ estadoUtileria: false });
+
+    expect(res.status).toBe(200);
+    expect(Boolean(res.body.data.estadoUtileria)).toBe(false);
+
+    const enDb = await Utileria.findByPk(ids.utileriaId);
+    expect(Boolean(enDb.estadoUtileria)).toBe(false);
+  });
+
+  test('PUT /api/utilerias/:id inexistente responde 404', async () => {
+    const res = await agent.put('/api/utilerias/999999999').send({ estadoUtileria: true });
+
+    expect(res.status).toBe(404);
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/utilerias.test.js =====
+
+===== INICIO ARCHIVO: src/backend/tests/vehiculos.test.js =====
+const app = require('../app');
+const {
+  sequelize,
+  Vehiculo,
+  Lavado,
+  EstadoLavado,
+  CategoriaVehiculo,
+  MarcaVehiculo,
+  ModeloVehiculo,
+} = require('../models');
+const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
+const { createBaseFixtures, removeBaseFixtures, suffix } = require('./helpers/fixtures');
+const { loginAgent, removeTestUser } = require('./helpers/auth');
+
+let ids;
+let agent;
+let authUser;
+let estadoEnEsperaId;
+let estadoEntregadoId;
+const createdVehiculos = [];
+const createdCategorias = [];
+const createdMarcas = [];
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+  ids = await createBaseFixtures();
+  await ensureLavadoCatalogs();
+  estadoEnEsperaId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'En Espera' } })
+  ).codigoEstado;
+  estadoEntregadoId = (
+    await EstadoLavado.findOne({ where: { descripcionEstado: 'Entregado' } })
+  ).codigoEstado;
+  ({ agent, user: authUser } = await loginAgent(app));
+});
+
+afterEach(async () => {
+  while (createdVehiculos.length) {
+    const id = createdVehiculos.pop();
+    await Lavado.destroy({ where: { vehi: id } });
+    await Vehiculo.destroy({ where: { codigoVehi: id } });
+  }
+  while (createdMarcas.length) {
+    const id = createdMarcas.pop();
+    await ModeloVehiculo.destroy({ where: { marcaVehi: id } });
+    await MarcaVehiculo.destroy({ where: { codigoMarcaVehi: id } });
+  }
+  while (createdCategorias.length) {
+    const id = createdCategorias.pop();
+    await MarcaVehiculo.destroy({ where: { categoriaVehi: id } });
+    await CategoriaVehiculo.destroy({ where: { codigoCategoriaVehi: id } });
+  }
+});
+
+afterAll(async () => {
+  await removeTestUser(authUser);
+  await removeBaseFixtures(ids);
+  await sequelize.close();
+});
+
+describe('CRUD de vehículos y catálogos', () => {
+  test('POST /api/vehiculos crea un vehículo (201)', async () => {
+    const res = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `P${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.codigoVehi).toBeDefined();
+    createdVehiculos.push(res.body.data.codigoVehi);
+  });
+
+  test('POST /api/vehiculos con cliente inexistente responde 400', async () => {
+    const res = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: 'BAD001', estadoVehi: true, cliente: 999999999, modeloVehi: ids.modeloVehiculoId });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/vehiculos con modelo inexistente responde 400', async () => {
+    const res = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: 'BAD002', estadoVehi: true, cliente: ids.clienteId, modeloVehi: 999999999 });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('GET /api/vehiculos lista vehículos (200)', async () => {
+    const res = await agent.get('/api/vehiculos');
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  test('GET /api/vehiculos incluye marca y categoría del vehículo', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `M${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    createdVehiculos.push(create.body.data.codigoVehi);
+
+    const res = await agent.get('/api/vehiculos');
+    const vehiculo = res.body.data.find((v) => v.codigoVehi === create.body.data.codigoVehi);
+
+    expect(vehiculo.modelo).toBeDefined();
+    expect(vehiculo.modelo.marca).toBeDefined();
+    expect(vehiculo.modelo.marca.categoria).toBeDefined();
+  });
+
+  test('GET /api/vehiculos?cliente filtra por cliente', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `F${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    createdVehiculos.push(create.body.data.codigoVehi);
+
+    const res = await agent.get(`/api/vehiculos?cliente=${ids.clienteId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.every((v) => v.cliente === ids.clienteId)).toBe(true);
+  });
+
+  test('los vehículos inactivos se excluyen del listado pero se obtienen por id', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `I${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await agent.put(`/api/vehiculos/${vehiculoId}`).send({ estadoVehi: false });
+
+    const listado = await agent.get('/api/vehiculos');
+    expect(listado.body.data.some((v) => v.codigoVehi === vehiculoId)).toBe(false);
+
+    const porId = await agent.get(`/api/vehiculos/${vehiculoId}`);
+    expect(porId.status).toBe(200);
+    expect(porId.body.data.codigoVehi).toBe(vehiculoId);
+  });
+
+  test('GET /api/vehiculos/:id inexistente responde 404', async () => {
+    const res = await agent.get('/api/vehiculos/999999999');
+
+    expect(res.status).toBe(404);
+  });
+
+  test('PUT /api/vehiculos/:id actualiza (200)', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `E${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const id = create.body.data.codigoVehi;
+    createdVehiculos.push(id);
+
+    const res = await agent.put(`/api/vehiculos/${id}`).send({ patenteVehi: 'NUEVA123' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.patenteVehi).toBe('NUEVA123');
+  });
+
+  test('DELETE /api/vehiculos/:id responde 204', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `D${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const id = create.body.data.codigoVehi;
+
+    const res = await agent.delete(`/api/vehiculos/${id}`);
+
+    expect(res.status).toBe(204);
+    expect(await Vehiculo.findByPk(id)).toBeNull();
+  });
+
+  test('DELETE /api/vehiculos/:id inexistente responde 404', async () => {
+    const res = await agent.delete('/api/vehiculos/999999999');
+
+    expect(res.status).toBe(404);
+  });
+
+  test('DELETE /api/vehiculos/:id con lavados asociados aplica baja lógica (204)', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `C${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      fechaHoraLavado: new Date(),
+      estado: ids.estadoLavadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(204);
+
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(false);
+  });
+
+  test('DELETE /api/vehiculos/:id con lavados en otro estado aplica baja lógica (204)', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `N${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      fechaHoraLavado: new Date(),
+      estado: ids.estadoLavadoAltId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(204);
+
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(false);
+  });
+
+  test('PUT /api/vehiculos/:id con lavado activo responde 409 y no modifica', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `B${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.put(`/api/vehiculos/${vehiculoId}`).send({ patenteVehi: 'CAMBIO01' });
+
+    expect(res.status).toBe(409);
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb.patenteVehi).not.toBe('CAMBIO01');
+  });
+
+  test('DELETE /api/vehiculos/:id con lavado activo responde 409 y no da de baja', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `L${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      estado: estadoEnEsperaId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(409);
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(true);
+  });
+
+  test('DELETE /api/vehiculos/:id con lavado entregado aplica baja lógica (204)', async () => {
+    const create = await agent
+      .post('/api/vehiculos')
+      .send({ patenteVehi: `T${suffix()}`, estadoVehi: true, cliente: ids.clienteId, modeloVehi: ids.modeloVehiculoId });
+    const vehiculoId = create.body.data.codigoVehi;
+    createdVehiculos.push(vehiculoId);
+
+    await Lavado.create({
+      estado: estadoEntregadoId,
+      utileria: ids.utileriaId,
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+
+    const res = await agent.delete(`/api/vehiculos/${vehiculoId}`);
+
+    expect(res.status).toBe(204);
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(enDb).not.toBeNull();
+    expect(Boolean(enDb.estadoVehi)).toBe(false);
+  });
+
+  test('POST /api/categorias-vehiculo crea una categoría (201)', async () => {
+    const res = await agent
+      .post('/api/categorias-vehiculo')
+      .send({ categoriaVehi: `Cat ${suffix()}` });
+
+    expect(res.status).toBe(201);
+    createdCategorias.push(res.body.data.codigoCategoriaVehi);
+  });
+
+  test('POST /api/marcas-vehiculo con categoría inexistente responde 400', async () => {
+    const res = await agent
+      .post('/api/marcas-vehiculo')
+      .send({ marcaVehi: 'MarcaX', categoriaVehi: 999999999 });
+
+    expect(res.status).toBe(400);
+  });
+
+  test('POST /api/modelos-vehiculo crea un modelo (201)', async () => {
+    const res = await agent
+      .post('/api/modelos-vehiculo')
+      .send({ modeloVehi: `Modelo ${suffix()}`, marcaVehi: ids.marcaVehiculoId });
+
+    expect(res.status).toBe(201);
+    await ModeloVehiculo.destroy({ where: { codigoModeloVehi: res.body.data.codigoModeloVehi } });
+  });
+});
+===== FIN ARCHIVO: src/backend/tests/vehiculos.test.js =====
+
+===== INICIO ARCHIVO: src/backend/utils/AppError.js =====
+class AppError extends Error {
+  constructor(message, statusCode = 400) {
+    super(message);
+    this.name = 'AppError';
+    this.statusCode = statusCode;
+    this.isOperational = true;
+  }
+}
+
+module.exports = AppError;
+===== FIN ARCHIVO: src/backend/utils/AppError.js =====
+
+===== INICIO ARCHIVO: src/backend/utils/asyncHandler.js =====
+function asyncHandler(fn) {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+}
+
+module.exports = asyncHandler;
+===== FIN ARCHIVO: src/backend/utils/asyncHandler.js =====
+
+===== INICIO ARCHIVO: src/backend/utils/password.js =====
+const crypto = require('crypto');
+
+const KEY_LENGTH = 64;
+const PREFIX = 'scrypt';
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = crypto.scryptSync(password, salt, KEY_LENGTH).toString('hex');
+  return `${PREFIX}$${salt}$${derived}`;
+}
+
+function verifyPassword(password, stored) {
+  if (typeof stored !== 'string') {
+    return false;
+  }
+
+  const parts = stored.split('$');
+  if (parts.length !== 3 || parts[0] !== PREFIX) {
+    return false;
+  }
+
+  const [, salt, hash] = parts;
+  const derived = crypto.scryptSync(password, salt, KEY_LENGTH).toString('hex');
+  const expected = Buffer.from(hash, 'hex');
+  const actual = Buffer.from(derived, 'hex');
+
+  if (expected.length !== actual.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expected, actual);
+}
+
+module.exports = { hashPassword, verifyPassword };
+===== FIN ARCHIVO: src/backend/utils/password.js =====
+
+===== INICIO ARCHIVO: src/backend/utils/validators.js =====
+const AppError = require('./AppError');
+
+function isMissing(value) {
+  return value === undefined || value === null || value === '';
+}
+
+function requireFields(payload, fields) {
+  const missing = fields.filter((field) => isMissing(payload[field]));
+  if (missing.length > 0) {
+    throw new AppError(`Faltan campos obligatorios: ${missing.join(', ')}`, 400);
+  }
+}
+
+async function assertExists(model, id, message) {
+  if (isMissing(id)) {
+    throw new AppError(message, 400);
+  }
+  const found = await model.findByPk(id);
+  if (!found) {
+    throw new AppError(message, 400);
+  }
+}
+
+module.exports = { requireFields, assertExists };
+===== FIN ARCHIVO: src/backend/utils/validators.js =====
+
+===== INICIO ARCHIVO: src/backend/app.js =====
+const express = require('express');
+const session = require('express-session');
+const routes = require('./routes');
+const notFound = require('./middlewares/notFound');
+const errorHandler = require('./middlewares/errorHandler');
+const { loadConfig } = require('./config');
+
+const config = loadConfig();
+const app = express();
+
+app.use(express.json());
+app.use(
+  session({
+    secret: config.session.secret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: config.session.cookieSecure,
+    },
+  }),
+);
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, data: { status: 'ok' } });
+});
+
+app.use('/api', routes);
+
+app.use(notFound);
+app.use(errorHandler);
+
+module.exports = app;
+===== FIN ARCHIVO: src/backend/app.js =====
+
+===== INICIO ARCHIVO: src/backend/server.js =====
+const app = require('./app');
+const { sequelize, config } = require('./config/database');
+const { ensureDefaultAdmin } = require('./services/adminService');
+
+async function start() {
+  try {
+    await sequelize.authenticate();
+  } catch (error) {
+    console.error('No se pudo conectar a la base de datos:', error.message);
+    process.exit(1);
+  }
+
+  try {
+    await ensureDefaultAdmin();
+  } catch (error) {
+    console.error('No se pudo garantizar la cuenta administrador:', error.message);
+    process.exit(1);
+  }
+
+  app.listen(config.port, () => {
+    console.log(`Backend escuchando en el puerto ${config.port}`);
+  });
+}
+
+start();
+===== FIN ARCHIVO: src/backend/server.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/AppHeader.jsx =====
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import userIcon from '../assets/usuario.png';
+import BrandHeader from './BrandHeader.jsx';
+import LogoutPopup from './LogoutPopup.jsx';
+import { logout } from '../services/authService.js';
+
+export default function AppHeader() {
+  const navigate = useNavigate();
+  const [showLogout, setShowLogout] = useState(false);
+
+  async function handleConfirmLogout() {
+    try {
+      await logout();
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  }
+
+  return (
+    <header className="flex items-center gap-3">
+      <BrandHeader />
+
+      <div className="ml-auto mr-6">
+        <button
+          type="button"
+          onClick={() => setShowLogout(true)}
+          className="flex flex-col items-center"
+        >
+          <img src={userIcon} alt="Usuario" className="h-12 w-12" />
+          <span className="mt-1 text-sm font-bold text-brand-navy">ADMIN</span>
+        </button>
+      </div>
+
+      {showLogout ? (
+        <LogoutPopup onConfirm={handleConfirmLogout} onClose={() => setShowLogout(false)} />
+      ) : null}
+    </header>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/AppHeader.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/components/BrandHeader.jsx =====
+import autoIcon from '../assets/auto.png';
+
+export default function BrandHeader() {
+  return (
+    <div className="flex items-center gap-3">
+      <img src={autoIcon} alt="Auto de lavadero" className="h-12 w-12" />
+      <span className="text-2xl font-extrabold text-brand-navy">LavAutos oPreto</span>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/components/BrandHeader.jsx =====
+

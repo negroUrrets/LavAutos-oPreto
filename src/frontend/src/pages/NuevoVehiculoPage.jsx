@@ -116,8 +116,8 @@ export default function NuevoVehiculoPage() {
         modeloVehi: form.modelo,
       });
       setPopup({ message: 'Vehiculo agregado satisfactoriamente.', action: 'navigate' });
-    } catch {
-      setWarning('No se pudo registrar el vehiculo.');
+    } catch (error) {
+      setWarning(error?.status ? error.message : 'No se pudo registrar el vehiculo.');
     }
   }
 

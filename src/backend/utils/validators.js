@@ -11,11 +11,11 @@ function requireFields(payload, fields) {
   }
 }
 
-async function assertExists(model, id, message) {
+async function assertExists(model, id, message, transaction) {
   if (isMissing(id)) {
     throw new AppError(message, 400);
   }
-  const found = await model.findByPk(id);
+  const found = await model.findByPk(id, transaction ? { transaction } : undefined);
   if (!found) {
     throw new AppError(message, 400);
   }

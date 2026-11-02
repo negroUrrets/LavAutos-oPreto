@@ -1,5 +1,4 @@
-const { createCrudController } = require('../controllers/crudController');
 const { createCrudRouter } = require('./crudRoutes');
-const lavadoService = require('../services/lavadoService');
+const lavadosController = require('../controllers/lavadosController');
 
-module.exports = createCrudRouter(createCrudController(lavadoService), { allowDelete: false });
+module.exports = createCrudRouter(lavadosController, { allowDelete: false });

@@ -192,7 +192,7 @@ describe('NuevoVehiculoPage', () => {
     await user.click(screen.getByRole('button', { name: 'Registrar' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No se pudo registrar el vehiculo.',
+      'No se pudo crear el vehiculo.',
     );
     expect(screen.queryByText('CLIENTE INFO PAGE')).not.toBeInTheDocument();
   });

@@ -1,0 +1,3866 @@
+PROYECTO: LavAutos oPreto - Sistema de gestion de lavadero de vehiculos
+EQUIPO: [EquipoXX]
+VERSION: entrega-final
+COMMIT: no incluido
+PARTE: 3 de 3
+
+===== INICIO ARCHIVO: src/frontend/src/pages/LavadosPage.test.jsx =====
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import LavadosPage from './LavadosPage.jsx';
+
+const ESTADOS = [
+  { codigoEstado: 1, descripcionEstado: 'En Espera' },
+  { codigoEstado: 2, descripcionEstado: 'Lavando' },
+  { codigoEstado: 3, descripcionEstado: 'Terminado' },
+  { codigoEstado: 4, descripcionEstado: 'Entregado' },
+];
+
+let sessionOk = true;
+let lavados = [];
+
+function data(value) {
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: value }) });
+}
+
+function crearLavado(codigoLavado, codigoEstado) {
+  return {
+    codigoLavado,
+    fechaHoraLavado: '2026-09-07T13:05:00Z',
+    estado: codigoEstado,
+    datosEstado: ESTADOS.find((estado) => estado.codigoEstado === codigoEstado),
+    categoria: { descripcionLavado: 'Completo' },
+    vehiculo: {
+      patenteVehi: `AB-12${codigoLavado}-CD`,
+      modelo: { modeloVehi: 'Corsa', marca: { marcaVehi: 'Chevrolet' } },
+      datosCliente: {
+        persona: {
+          dni: 30111222,
+          nombre: 'Ana',
+          apellido: 'Perez',
+          celular: '1155512345',
+          email: 'ana@correo.com',
+        },
+      },
+    },
+  };
+}
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({
+      ok: sessionOk,
+      status: sessionOk ? 200 : 401,
+      json: () => Promise.resolve({ data: sessionOk ? { codigoLogin: 1 } : null }),
+    });
+  }
+  if (url === '/api/lavados') {
+    return data(lavados);
+  }
+  if (url === '/api/estados-lavado') {
+    return data(ESTADOS);
+  }
+  if (typeof url === 'string' && url.startsWith('/api/lavados/') && options.method === 'PUT') {
+    const id = Number(url.split('/').pop());
+    const body = JSON.parse(options.body);
+    lavados = lavados.map((lavado) =>
+      lavado.codigoLavado === id
+        ? {
+            ...lavado,
+            estado: body.estado,
+            datosEstado: ESTADOS.find(
+              (estado) => String(estado.codigoEstado) === String(body.estado),
+            ),
+          }
+        : lavado,
+    );
+    return data({ codigoLavado: id, estado: body.estado });
+  }
+  return data([]);
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/lavados']}>
+      <Routes>
+        <Route path="/lavados" element={<LavadosPage />} />
+        <Route path="/lavados/:lavadoId/editar" element={<div>EDITAR LAVADO PAGE</div>} />
+        <Route path="/home" element={<div>HOME PAGE</div>} />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  lavados = [];
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('LavadosPage', () => {
+  test('muestra las tres secciones, Nuevo Lavado y el boton de volver', async () => {
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: /nuevo lavado/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'En Espera...' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Lavando...' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Terminado...' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '←' })).toBeInTheDocument();
+  });
+
+  test('sin sesion valida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('Nuevo Lavado navega a la pagina de Clientes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /nuevo lavado/i }));
+
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('el boton de volver navega al home', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: '←' }));
+
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument();
+  });
+
+  test('agrupa los lavados por estado', async () => {
+    lavados = [crearLavado(1, 1), crearLavado(2, 2), crearLavado(3, 3), crearLavado(4, 4)];
+    renderPage();
+
+    const enEspera = await screen.findByRole('region', { name: 'En Espera...' });
+    const lavando = screen.getByRole('region', { name: 'Lavando...' });
+    const terminado = screen.getByRole('region', { name: 'Terminado...' });
+
+    expect(within(enEspera).getByDisplayValue('1')).toBeInTheDocument();
+    expect(within(lavando).getByDisplayValue('2')).toBeInTheDocument();
+    expect(within(terminado).getByDisplayValue('3')).toBeInTheDocument();
+    expect(within(terminado).queryByDisplayValue('4')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('4')).not.toBeInTheDocument();
+  });
+
+  test('muestra numero, hora y patente en solo lectura', async () => {
+    lavados = [crearLavado(1, 1)];
+    renderPage();
+
+    expect(await screen.findByDisplayValue('1')).toHaveAttribute('readonly');
+    expect(screen.getByDisplayValue('10:05 am')).toHaveAttribute('readonly');
+    expect(screen.getByDisplayValue('AB-121-CD')).toHaveAttribute('readonly');
+  });
+
+  test('Editar navega a la pagina de edicion del lavado', async () => {
+    const user = userEvent.setup();
+    lavados = [crearLavado(1, 1)];
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+
+    expect(await screen.findByText('EDITAR LAVADO PAGE')).toBeInTheDocument();
+  });
+
+  test('contrae y expande una seccion', async () => {
+    const user = userEvent.setup();
+    lavados = [crearLavado(1, 1)];
+    renderPage();
+
+    await screen.findByDisplayValue('1');
+
+    await user.click(screen.getByRole('button', { name: 'Contraer En Espera...' }));
+    expect(screen.queryByDisplayValue('1')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Expandir En Espera...' }));
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+  });
+
+  test('+info abre la ventana con los datos y Aceptar la cierra', async () => {
+    const user = userEvent.setup();
+    lavados = [crearLavado(1, 1)];
+    renderPage();
+
+    await screen.findByDisplayValue('1');
+    await user.click(screen.getByRole('button', { name: '+ info' }));
+
+    const dialogo = screen.getByRole('dialog');
+    expect(within(dialogo).getByText('Chevrolet')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Corsa')).toBeInTheDocument();
+    expect(within(dialogo).getByText('30111222')).toBeInTheDocument();
+    expect(within(dialogo).getByText('ana@correo.com')).toBeInTheDocument();
+
+    await user.click(within(dialogo).getByRole('button', { name: 'Aceptar' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+  });
+
+  test('Lavar mueve el lavado a la seccion Lavando', async () => {
+    const user = userEvent.setup();
+    lavados = [crearLavado(1, 1)];
+    renderPage();
+
+    await screen.findByDisplayValue('1');
+    await user.click(screen.getByRole('button', { name: 'Lavar' }));
+
+    expect(screen.getByText('Lavando Vehiculo')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    const lavando = await screen.findByRole('region', { name: 'Lavando...' });
+    expect(await within(lavando).findByDisplayValue('1')).toBeInTheDocument();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/lavados/1',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  test('Completado mueve el lavado a la seccion Terminado', async () => {
+    const user = userEvent.setup();
+    lavados = [crearLavado(2, 2)];
+    renderPage();
+
+    await screen.findByDisplayValue('2');
+    await user.click(screen.getByRole('button', { name: 'Completado' }));
+
+    expect(screen.getByText('Lavado Terminado')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    const terminado = await screen.findByRole('region', { name: 'Terminado...' });
+    expect(await within(terminado).findByDisplayValue('2')).toBeInTheDocument();
+  });
+
+  test('Entregar marca el lavado como Entregado y deja de mostrarlo', async () => {
+    const user = userEvent.setup();
+    lavados = [crearLavado(3, 3)];
+    renderPage();
+
+    await screen.findByDisplayValue('3');
+    await user.click(screen.getByRole('button', { name: 'Entregar' }));
+
+    expect(screen.getByText('Vehiculo Entregado')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(await screen.findByRole('region', { name: 'En Espera...' })).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('3')).not.toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/LavadosPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/LoginPage.jsx =====
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import autoIcon from '../assets/auto.png';
+import bubblesIcon from '../assets/burbujas.png';
+import Popup from '../components/Popup.jsx';
+import { login } from '../services/authService.js';
+
+const SUCCESS_MESSAGE = '!Bienvenid@!';
+const ERROR_MESSAGE = 'Usuario / Contraseña incorrecta';
+
+export default function LoginPage() {
+  const [usuario, setUsuario] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [fieldError, setFieldError] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  const navigate = useNavigate();
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setFieldError('');
+
+    if (!usuario.trim() || !contrasena.trim()) {
+      setFieldError('Usuario y contraseña son obligatorios.');
+      return;
+    }
+
+    try {
+      const ok = await login(usuario, contrasena);
+      setIsSuccess(ok);
+      setPopupMessage(ok ? SUCCESS_MESSAGE : ERROR_MESSAGE);
+    } catch {
+      setPopupMessage(ERROR_MESSAGE);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-brand-indigo  p-4">
+      <div className="w-full max-w-md rounded-3xl bg-brand-pink border-2 border-gray-400 px-10 py-12 shadow-2xl">
+        <div className="flex flex-col items-center">
+          <img src={bubblesIcon} alt="" className="h-8 w-14" />
+          <img src={autoIcon} alt="Auto de lavadero" className="h-14 w-18" />
+        </div>
+
+        <h1 className="mt-4 text-center text-4xl font-extrabold text-brand-title">
+          LavAutos oPreto
+        </h1>
+
+        <form className="mt-10 space-y-6" onSubmit={handleSubmit} noValidate>
+          <div>
+            <label htmlFor="usuario" className="block text-lg font-bold text-brand-navy">
+              Usuario
+            </label>
+            <input
+              id="usuario"
+              name="usuario"
+              type="text"
+              value={usuario}
+              onChange={(event) => setUsuario(event.target.value)}
+              className="mt-2 w-full rounded-full bg-brand-input px-5 py-3 text-white outline-none"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="contrasena" className="block text-lg font-bold text-brand-navy">
+              Contraseña
+            </label>
+            <input
+              id="contrasena"
+              name="contrasena"
+              type="password"
+              value={contrasena}
+              onChange={(event) => setContrasena(event.target.value)}
+              className="mt-2 w-full rounded-full bg-brand-input px-5 py-3 text-white outline-none"
+            />
+          </div>
+
+          {fieldError ? (
+            <p role="alert" className="text-sm font-bold text-red-700">
+              {fieldError}
+            </p>
+          ) : null}
+
+          {/* <button
+            type="submit"
+            className=" ml-30  rounded-full bg-brand-green py-3 text-xl font-bold text-white"
+          >
+            Iniciar Sesion
+          </button> */}
+
+          <button
+  type="submit"
+  className="mx-auto block px-12 py-3 text-xl font-bold text-white rounded-full bg-brand-green"
+>
+  Iniciar Sesion
+</button>
+
+ 
+        </form>
+      </div>
+
+      {popupMessage ? (
+        <Popup
+          message={popupMessage}
+          onClose={() => {
+            setPopupMessage('');
+            if (isSuccess) {
+              navigate('/home');
+            }
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/LoginPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/LoginPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import LoginPage from './LoginPage.jsx';
+
+function renderLogin() {
+  return render(
+    <MemoryRouter initialEntries={['/login']}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/home" element={<div>HOME PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  globalThis.fetch = vi.fn();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('LoginPage', () => {
+  test('muestra el título, los campos y el botón', () => {
+    renderLogin();
+
+    expect(screen.getByText('LavAutos oPreto')).toBeInTheDocument();
+    expect(screen.getByLabelText('Usuario')).toBeInTheDocument();
+    expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Iniciar Sesion' })).toBeInTheDocument();
+  });
+
+  test('no llama al backend y avisa si hay campos vacíos', async () => {
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.click(screen.getByRole('button', { name: 'Iniciar Sesion' }));
+
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  test('envía las credenciales al backend con credentials include', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: true, status: 200 });
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.type(screen.getByLabelText('Usuario'), 'admin');
+    await user.type(screen.getByLabelText('Contraseña'), '123456');
+    await user.click(screen.getByRole('button', { name: 'Iniciar Sesion' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/auth/login',
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    );
+  });
+
+  test('muestra el popup de éxito con !Bienvenid@!', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: true, status: 200 });
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.type(screen.getByLabelText('Usuario'), 'admin');
+    await user.type(screen.getByLabelText('Contraseña'), '123456');
+    await user.click(screen.getByRole('button', { name: 'Iniciar Sesion' }));
+
+    expect(await screen.findByText('!Bienvenid@!')).toBeInTheDocument();
+  });
+
+  test('al cerrar el popup de éxito navega al home', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: true, status: 200 });
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.type(screen.getByLabelText('Usuario'), 'admin');
+    await user.type(screen.getByLabelText('Contraseña'), '123456');
+    await user.click(screen.getByRole('button', { name: 'Iniciar Sesion' }));
+    await screen.findByText('!Bienvenid@!');
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument();
+  });
+
+  test('muestra el popup de error cuando el login falla', async () => {
+    globalThis.fetch.mockResolvedValue({ ok: false, status: 401 });
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.type(screen.getByLabelText('Usuario'), 'admin');
+    await user.type(screen.getByLabelText('Contraseña'), 'mal');
+    await user.click(screen.getByRole('button', { name: 'Iniciar Sesion' }));
+
+    expect(await screen.findByText('Usuario / Contraseña incorrecta')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/LoginPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/NuevoClientePage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import autoIcon from '../assets/auto.png';
+import userIcon from '../assets/usuario.png';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import { createCliente, searchClientes } from '../services/clientService.js';
+import {
+  createVehiculo,
+  listCategorias,
+  listMarcas,
+  listModelos,
+} from '../services/vehicleService.js';
+import {
+  formatPatente,
+  isValidEmail,
+  isValidPatente,
+  onlyDigits,
+  onlyLetters,
+} from '../utils/validators.js';
+
+const EMPTY_FORM = {
+  dni: '',
+  nombre: '',
+  apellido: '',
+  celular: '',
+  email: '',
+  categoria: '',
+  marca: '',
+  modelo: '',
+  patente: '',
+};
+
+export default function NuevoClientePage() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [categorias, setCategorias] = useState([]);
+  const [marcas, setMarcas] = useState([]);
+  const [modelos, setModelos] = useState([]);
+  const [warning, setWarning] = useState('');
+  const [popup, setPopup] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    listCategorias().then(setCategorias);
+    listMarcas().then(setMarcas);
+    listModelos().then(setModelos);
+  }, []);
+
+  function updateField(name, value) {
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'categoria') {
+        next.marca = '';
+        next.modelo = '';
+      }
+      if (name === 'marca') {
+        next.modelo = '';
+      }
+      return next;
+    });
+  }
+
+  const marcasFiltradas = marcas.filter(
+    (marca) => String(marca.categoriaVehi) === String(form.categoria),
+  );
+  const modelosFiltrados = modelos.filter(
+    (modelo) => String(modelo.marcaVehi) === String(form.marca),
+  );
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setWarning('');
+
+    const incompleto = Object.values(form).some((value) => !String(value).trim());
+    if (incompleto) {
+      setWarning('Todos los campos son obligatorios.');
+      return;
+    }
+
+    if (!isValidEmail(form.email)) {
+      setWarning('El e-mail no tiene un formato válido.');
+      return;
+    }
+
+    if (!isValidPatente(form.patente)) {
+      setWarning('La patente debe tener el formato AA-123-AA.');
+      return;
+    }
+
+    const dni = String(form.dni).trim();
+    const existentes = await searchClientes(dni);
+    const yaExiste = existentes.some((cliente) => String(cliente.dni) === dni);
+
+    if (yaExiste) {
+      setPopup({ message: 'Ese cliente ya se encuentra registrado.', action: 'clear' });
+      return;
+    }
+
+    try {
+      const cliente = await createCliente({
+        nombre: form.nombre,
+        apellido: form.apellido,
+        dni: form.dni,
+        email: form.email,
+        celular: form.celular,
+      });
+      await createVehiculo({
+        patenteVehi: form.patente,
+        estadoVehi: true,
+        cliente: cliente.codigoPersona,
+        modeloVehi: form.modelo,
+      });
+      setPopup({ message: `Bienvenido ${form.nombre}`, action: 'navigate' });
+    } catch {
+      setWarning('No se pudo registrar el cliente.');
+    }
+  }
+
+  function handlePopupClose() {
+    const action = popup?.action;
+    setPopup(null);
+    if (action === 'clear') {
+      setForm(EMPTY_FORM);
+    } else if (action === 'navigate') {
+      navigate('/clientes');
+    }
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  const inputClass =
+    'mt-1 w-full rounded-full bg-brand-input px-4 py-2 text-white outline-none';
+  const labelClass = 'block text-sm font-bold text-white';
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-brand-indigo p-6">
+      <div className="w-full max-w-md rounded-3xl bg-brand-pink p-6">
+        <h1 className="text-2xl font-extrabold text-[#5ea014]">Nuevo Cliente</h1>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="mt-4 rounded-2xl bg-brand-indigo p-4">
+            <div className="mb-3 flex justify-center">
+              <img src={userIcon} alt="Usuario" className="h-12 w-12" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="dni" className={labelClass}>
+                  DNI
+                </label>
+                <input
+                  id="dni"
+                  name="dni"
+                  type="text"
+                  value={form.dni}
+                  onChange={(event) => updateField('dni', onlyDigits(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="nombre" className={labelClass}>
+                  Nombre
+                </label>
+                <input
+                  id="nombre"
+                  name="nombre"
+                  type="text"
+                  value={form.nombre}
+                  onChange={(event) => updateField('nombre', onlyLetters(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="apellido" className={labelClass}>
+                  Apellido
+                </label>
+                <input
+                  id="apellido"
+                  name="apellido"
+                  type="text"
+                  value={form.apellido}
+                  onChange={(event) => updateField('apellido', onlyLetters(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="celular" className={labelClass}>
+                  Celular
+                </label>
+                <input
+                  id="celular"
+                  name="celular"
+                  type="text"
+                  value={form.celular}
+                  onChange={(event) => updateField('celular', onlyDigits(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className={labelClass}>
+                  e-mail
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="text"
+                  value={form.email}
+                  onChange={(event) => updateField('email', event.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl bg-brand-indigo p-4">
+            <div className="mb-3 flex justify-center">
+              <img src={autoIcon} alt="Vehiculo" className="h-10 w-10" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="categoria" className={labelClass}>
+                  Tipo Vehiculo
+                </label>
+                <select
+                  id="categoria"
+                  name="categoria"
+                  value={form.categoria}
+                  onChange={(event) => updateField('categoria', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {categorias.map((categoria) => (
+                    <option key={categoria.codigoCategoriaVehi} value={categoria.codigoCategoriaVehi}>
+                      {categoria.categoriaVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="marca" className={labelClass}>
+                  Marca Vehiculo
+                </label>
+                <select
+                  id="marca"
+                  name="marca"
+                  value={form.marca}
+                  onChange={(event) => updateField('marca', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {marcasFiltradas.map((marca) => (
+                    <option key={marca.codigoMarcaVehi} value={marca.codigoMarcaVehi}>
+                      {marca.marcaVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="modelo" className={labelClass}>
+                  Modelo Vehiculo
+                </label>
+                <select
+                  id="modelo"
+                  name="modelo"
+                  value={form.modelo}
+                  onChange={(event) => updateField('modelo', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {modelosFiltrados.map((modelo) => (
+                    <option key={modelo.codigoModeloVehi} value={modelo.codigoModeloVehi}>
+                      {modelo.modeloVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="patente" className={labelClass}>
+                  Patente
+                </label>
+                <input
+                  id="patente"
+                  name="patente"
+                  type="text"
+                  value={form.patente}
+                  onChange={(event) => updateField('patente', formatPatente(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {warning ? (
+            <p role="alert" className="mt-3 text-sm font-bold text-red-700">
+              {warning}
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex justify-center gap-6">
+            <button
+              type="submit"
+              className="rounded-full bg-[#5ea014] px-8 py-2 font-bold text-white"
+            >
+              Registrar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/clientes')}
+              className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {popup ? <Popup message={popup.message} onClose={handlePopupClose} /> : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/NuevoClientePage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/NuevoClientePage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import NuevoClientePage from './NuevoClientePage.jsx';
+
+let sessionOk = true;
+let categorias = [];
+let marcas = [];
+let modelos = [];
+let searchResult = [];
+
+function mockFetch(url) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/categorias-vehiculo') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: categorias }) });
+  }
+  if (url === '/api/marcas-vehiculo') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: marcas }) });
+  }
+  if (url === '/api/modelos-vehiculo') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: modelos }) });
+  }
+  if (typeof url === 'string' && url.startsWith('/api/clientes?buscar=')) {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: searchResult }) });
+  }
+  if (url === '/api/clientes') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: { codigoPersona: 5 } }) });
+  }
+  if (url === '/api/vehiculos') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: { codigoVehi: 9 } }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/clientes/nuevo']}>
+      <Routes>
+        <Route path="/clientes/nuevo" element={<NuevoClientePage />} />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+async function fillForm(user, overrides = {}) {
+  const values = {
+    dni: '12345678',
+    nombre: 'Juan',
+    apellido: 'Perez',
+    celular: '5551234',
+    email: 'juan@example.com',
+    patente: 'AA123BB',
+    ...overrides,
+  };
+
+  await user.type(screen.getByLabelText('DNI'), values.dni);
+  await user.type(screen.getByLabelText('Nombre'), values.nombre);
+  await user.type(screen.getByLabelText('Apellido'), values.apellido);
+  await user.type(screen.getByLabelText('Celular'), values.celular);
+  await user.type(screen.getByLabelText('e-mail'), values.email);
+  await user.selectOptions(screen.getByLabelText('Tipo Vehiculo'), '1');
+  await user.selectOptions(screen.getByLabelText('Marca Vehiculo'), '10');
+  await user.selectOptions(screen.getByLabelText('Modelo Vehiculo'), '100');
+  await user.type(screen.getByLabelText('Patente'), values.patente);
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  categorias = [{ codigoCategoriaVehi: 1, categoriaVehi: 'Auto' }];
+  marcas = [{ codigoMarcaVehi: 10, marcaVehi: 'Fiat', categoriaVehi: 1 }];
+  modelos = [{ codigoModeloVehi: 100, modeloVehi: 'Uno', marcaVehi: 10 }];
+  searchResult = [];
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('NuevoClientePage', () => {
+  test('muestra el título, los campos y los botones', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Nuevo Cliente')).toBeInTheDocument();
+    expect(screen.getByLabelText('DNI')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre')).toBeInTheDocument();
+    expect(screen.getByLabelText('Apellido')).toBeInTheDocument();
+    expect(screen.getByLabelText('Celular')).toBeInTheDocument();
+    expect(screen.getByLabelText('e-mail')).toBeInTheDocument();
+    expect(screen.getByLabelText('Tipo Vehiculo')).toBeInTheDocument();
+    expect(screen.getByLabelText('Marca Vehiculo')).toBeInTheDocument();
+    expect(screen.getByLabelText('Modelo Vehiculo')).toBeInTheDocument();
+    expect(screen.getByLabelText('Patente')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+  });
+
+  test('con un campo vacío advierte y no registra', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/clientes', expect.anything());
+  });
+
+  test('las marcas dependen del tipo y los modelos de la marca', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    expect(screen.queryByRole('option', { name: 'Fiat' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Tipo Vehiculo'), '1');
+    expect(screen.getByRole('option', { name: 'Fiat' })).toBeInTheDocument();
+
+    expect(screen.queryByRole('option', { name: 'Uno' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Marca Vehiculo'), '10');
+    expect(screen.getByRole('option', { name: 'Uno' })).toBeInTheDocument();
+  });
+
+  test('con dni ya registrado muestra el popup y limpia el formulario', async () => {
+    searchResult = [{ codigoPersona: 1, dni: 12345678, nombre: 'Juan' }];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Ese cliente ya se encuentra registrado.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(screen.getByLabelText('DNI')).toHaveValue('');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/clientes', expect.anything());
+  });
+
+  test('registra el cliente y el vehículo y muestra Bienvenido', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Bienvenido Juan')).toBeInTheDocument();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/clientes',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/vehiculos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('Cancelar navega a la página de Clientes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+
+  test('la patente se formatea mientras se tipea', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await user.type(screen.getByLabelText('Patente'), 'ab254mc');
+
+    expect(screen.getByLabelText('Patente')).toHaveValue('AB-254-MC');
+  });
+
+  test('DNI y Celular aceptan solo números', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await user.type(screen.getByLabelText('DNI'), '12a3');
+    await user.type(screen.getByLabelText('Celular'), '55b5');
+
+    expect(screen.getByLabelText('DNI')).toHaveValue('123');
+    expect(screen.getByLabelText('Celular')).toHaveValue('555');
+  });
+
+  test('Nombre y Apellido aceptan solo letras (con acentos y ñ)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await user.type(screen.getByLabelText('Nombre'), 'Muñoz1');
+    await user.type(screen.getByLabelText('Apellido'), 'Pérez2');
+
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Muñoz');
+    expect(screen.getByLabelText('Apellido')).toHaveValue('Pérez');
+  });
+
+  test('con e-mail inválido advierte y no registra', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await fillForm(user, { email: 'juan@' });
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('El e-mail no tiene un formato válido.');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/clientes', expect.anything());
+  });
+
+  test('con patente inválida advierte y no registra', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Cliente');
+
+    await fillForm(user, { patente: 'AB254M' });
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La patente debe tener el formato AA-123-AA.',
+    );
+    expect(globalThis.fetch).not.toHaveBeenCalledWith('/api/clientes', expect.anything());
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/NuevoClientePage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/NuevoLavadoPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import BrandHeader from '../components/BrandHeader.jsx';
+import ConfirmPopup from '../components/ConfirmPopup.jsx';
+import { fetchSessionData } from '../services/authService.js';
+import {
+  createLavado,
+  listCategoriasLavado,
+  listEstadosLavado,
+  listUtileria,
+  updateUtileria,
+} from '../services/lavadoService.js';
+import { getVehiculo } from '../services/vehicleService.js';
+
+function codigo(valor) {
+  return String(valor);
+}
+
+export default function NuevoLavadoPage() {
+  const { id, vehiculoId } = useParams();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [vehiculo, setVehiculo] = useState(null);
+  const [utilerias, setUtilerias] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [seleccion, setSeleccion] = useState([]);
+  const [categoria, setCategoria] = useState('');
+  const [estado, setEstado] = useState('');
+  const [detalles, setDetalles] = useState('');
+  const [login, setLogin] = useState(null);
+  const [warning, setWarning] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSessionData()
+      .then((session) => {
+        if (!active) {
+          return;
+        }
+        if (!session) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        setLogin(session.codigoLogin);
+
+        Promise.all([
+          getVehiculo(vehiculoId),
+          listUtileria(),
+          listCategoriasLavado(),
+          listEstadosLavado(),
+        ]).then(([datosVehiculo, listaUtileria, listaCategorias, listaEstados]) => {
+          if (!active) {
+            return;
+          }
+          setVehiculo(datosVehiculo);
+          setUtilerias(listaUtileria);
+          setCategorias(listaCategorias);
+          setEstados(listaEstados);
+          setSeleccion(
+            listaUtileria
+              .filter((utileria) => Boolean(utileria.estadoUtileria))
+              .map((utileria) => codigo(utileria.codigoUtileria)),
+          );
+          setChecking(false);
+        });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [vehiculoId, navigate]);
+
+  async function toggleUtileria(codigoUtileria) {
+    const activa = seleccion.includes(codigoUtileria);
+    const nuevoEstado = !activa;
+
+    try {
+      await updateUtileria(codigoUtileria, { estadoUtileria: nuevoEstado });
+      setSeleccion((prev) =>
+        nuevoEstado ? [...prev, codigoUtileria] : prev.filter((item) => item !== codigoUtileria),
+      );
+      setWarning('');
+    } catch {
+      setWarning('No se pudo actualizar la utileria.');
+    }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    setWarning('');
+
+    if (!categoria) {
+      setWarning('Seleccione una categoria.');
+      return;
+    }
+    if (!estado) {
+      setWarning('Seleccione un estado.');
+      return;
+    }
+    if (seleccion.length === 0) {
+      setWarning('Seleccione al menos una utileria.');
+      return;
+    }
+
+    setShowConfirm(true);
+  }
+
+  async function handleConfirm() {
+    try {
+      await createLavado({
+        vehi: vehiculoId,
+        categoriaLavado: categoria,
+        estado,
+        utileria: seleccion[0],
+        detallesLavado: detalles,
+        login,
+      });
+      setShowConfirm(false);
+      navigate(`/clientes/${id}/info`);
+    } catch {
+      setShowConfirm(false);
+      setWarning('No se pudo registrar el lavado.');
+    }
+  }
+
+  function handleCancelConfirm() {
+    setShowConfirm(false);
+    setCategoria('');
+    setEstado('');
+    setDetalles('');
+    setSeleccion(
+      utilerias
+        .filter((utileria) => Boolean(utileria.estadoUtileria))
+        .map((utileria) => codigo(utileria.codigoUtileria)),
+    );
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  const labelClass = 'block text-sm font-bold text-white';
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <BrandHeader />
+
+      <div className="mx-auto mt-2 max-w-3xl rounded-3xl border-3 border-blue-900 bg-[#8f8a8a] p-6">
+        <h1 className="text-xl font-bold text-brand-navy">
+          Nuevo Lavado: <span className="font-extrabold">{vehiculo?.patenteVehi}</span>
+        </h1>
+
+        <form onSubmit={handleSubmit} className="mt-4 rounded-2xl bg-[#2637a2] p-6">
+          <div className="flex flex-wrap gap-8">
+            <div className="flex-1 space-y-3">
+              {utilerias.map((utileria) => {
+                const valor = codigo(utileria.codigoUtileria);
+                return (
+                  <label
+                    key={valor}
+                    className="flex items-center gap-3 text-sm font-bold text-white"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={seleccion.includes(valor)}
+                      onChange={() => toggleUtileria(valor)}
+                      className="h-5 w-5"
+                    />
+                    {utileria.descripcionUtileria}
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex-1 space-y-3">
+              {categorias.map((item) => {
+                const valor = codigo(item.codigoCategoriaLavado);
+                const activa = categoria === valor;
+                return (
+                  <div
+                    key={valor}
+                    className="flex items-center justify-between gap-3 text-sm font-bold text-white"
+                  >
+                    <span>{item.descripcionLavado}</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={activa}
+                      aria-label={item.descripcionLavado}
+                      onClick={() => setCategoria(valor)}
+                      className={`h-6 w-12 rounded-full p-1 transition-colors ${
+                        activa ? 'bg-green-600' : 'bg-red-600'
+                      }`}
+                    >
+                      <span
+                        className={`block h-4 w-4 rounded-full bg-white transition-transform ${
+                          activa ? 'translate-x-6' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label htmlFor="detalles" className={labelClass}>
+              Detalles
+            </label>
+            <textarea
+              id="detalles"
+              value={detalles}
+              onChange={(event) => setDetalles(event.target.value)}
+              placeholder="Detalles..."
+              rows={3}
+              className="mt-1 w-full rounded-2xl bg-brand-input px-4 py-2 text-white outline-none"
+            />
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <div className="flex items-center gap-3 rounded-xl border border-white px-4 py-2">
+              <label htmlFor="estado" className={labelClass}>
+                Estado...
+              </label>
+              <select
+                id="estado"
+                value={estado}
+                onChange={(event) => setEstado(event.target.value)}
+                className="rounded-md bg-white px-3 py-1 text-brand-navy outline-none"
+              >
+                <option value="">Seleccionar...</option>
+                {estados.map((item) => (
+                  <option key={item.codigoEstado} value={item.codigoEstado}>
+                    {item.descripcionEstado}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {warning ? (
+            <p role="alert" className="mt-3 text-center text-sm font-bold text-red-700">
+              {warning}
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex justify-center gap-6">
+            <button
+              type="submit"
+              className="rounded-full bg-green-600 px-8 py-2 font-bold text-white"
+            >
+              Registrar Lavado
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/clientes/${id}/info`)}
+              className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {showConfirm ? (
+        <ConfirmPopup
+          message={`¿ Desea registrar el lavado del vehiculo "${vehiculo?.patenteVehi ?? ''}" ?`}
+          onConfirm={handleConfirm}
+          onCancel={handleCancelConfirm}
+        />
+      ) : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/NuevoLavadoPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/NuevoLavadoPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import NuevoLavadoPage from './NuevoLavadoPage.jsx';
+
+let sessionOk = true;
+let utilerias = [];
+let categorias = [];
+let estados = [];
+let postBody = null;
+
+function data(value) {
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: value }) });
+}
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({
+      ok: sessionOk,
+      status: sessionOk ? 200 : 401,
+      json: () => Promise.resolve({ data: sessionOk ? { codigoLogin: 3 } : null }),
+    });
+  }
+  if (url === '/api/vehiculos/9') {
+    return data({ codigoVehi: 9, patenteVehi: 'AC-125-BF', cliente: 5 });
+  }
+  if (url === '/api/utilerias') {
+    return data(utilerias);
+  }
+  if (url === '/api/categorias-lavado') {
+    return data(categorias);
+  }
+  if (url === '/api/estados-lavado') {
+    return data(estados);
+  }
+  if (typeof url === 'string' && url.startsWith('/api/utilerias/')) {
+    return data({ estadoUtileria: true });
+  }
+  if (url === '/api/lavados' && options.method === 'POST') {
+    postBody = JSON.parse(options.body);
+    return data({ codigoLavado: 1 });
+  }
+  return data([]);
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/clientes/5/vehiculos/9/lavar']}>
+      <Routes>
+        <Route path="/clientes/:id/vehiculos/:vehiculoId/lavar" element={<NuevoLavadoPage />} />
+        <Route path="/clientes/:id/info" element={<div>CLIENTE INFO PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  utilerias = [
+    { codigoUtileria: 1, descripcionUtileria: 'Auxilio', estadoUtileria: false },
+    { codigoUtileria: 2, descripcionUtileria: 'Balizas', estadoUtileria: false },
+  ];
+  categorias = [
+    { codigoCategoriaLavado: 10, descripcionLavado: 'Basico' },
+    { codigoCategoriaLavado: 11, descripcionLavado: 'Completo' },
+  ];
+  estados = [{ codigoEstado: 20, descripcionEstado: 'En Espera' }];
+  postBody = null;
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('NuevoLavadoPage', () => {
+  test('muestra la patente y los catálogos', async () => {
+    renderPage();
+
+    expect(await screen.findByText('AC-125-BF')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Auxilio' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Basico' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Detalles')).toBeInTheDocument();
+    expect(screen.getByLabelText('Estado...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrar Lavado' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('sólo un toggle de categoría queda encendido', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('switch', { name: 'Basico' }));
+    expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(screen.getByRole('switch', { name: 'Completo' }));
+    expect(screen.getByRole('switch', { name: 'Completo' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute('aria-checked', 'false');
+  });
+
+  test('tildar una utilería actualiza su estado', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/utilerias/1',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+
+  test('exige categoría, estado y utilería', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar Lavado' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Seleccione una categoria.');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/lavados',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  test('registra el lavado con confirmación y vuelve a la información', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+    await user.click(screen.getByRole('switch', { name: 'Basico' }));
+    await user.selectOptions(screen.getByLabelText('Estado...'), '20');
+    await user.type(screen.getByLabelText('Detalles'), 'Lavado 1');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar Lavado' }));
+
+    expect(
+      screen.getByText('¿ Desea registrar el lavado del vehiculo "AC-125-BF" ?'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(postBody).toEqual({
+      vehi: '9',
+      categoriaLavado: '10',
+      estado: '20',
+      utileria: '1',
+      detallesLavado: 'Lavado 1',
+      login: 3,
+    });
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+  });
+
+  test('cancelar en el popup restablece el formulario sin registrar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+    await user.click(screen.getByRole('switch', { name: 'Basico' }));
+    await user.selectOptions(screen.getByLabelText('Estado...'), '20');
+    await user.type(screen.getByLabelText('Detalles'), 'algo');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar Lavado' }));
+    await user.click(screen.getByRole('button', { name: 'CANCELAR' }));
+
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/lavados',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(screen.getByLabelText('Detalles')).toHaveValue('');
+    expect(screen.getByLabelText('Estado...')).toHaveValue('');
+    expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute('aria-checked', 'false');
+  });
+
+  test('Cancelar vuelve a la información sin registrar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/NuevoLavadoPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/NuevoVehiculoPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import autoIcon from '../assets/auto.png';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import {
+  createVehiculo,
+  listCategorias,
+  listMarcas,
+  listModelos,
+  listVehiculos,
+} from '../services/vehicleService.js';
+import { formatPatente, isValidPatente } from '../utils/validators.js';
+
+const EMPTY_FORM = {
+  categoria: '',
+  marca: '',
+  modelo: '',
+  patente: '',
+};
+
+export default function NuevoVehiculoPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [categorias, setCategorias] = useState([]);
+  const [marcas, setMarcas] = useState([]);
+  const [modelos, setModelos] = useState([]);
+  const [warning, setWarning] = useState('');
+  const [popup, setPopup] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+        } else {
+          setChecking(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    listCategorias().then(setCategorias);
+    listMarcas().then(setMarcas);
+    listModelos().then(setModelos);
+  }, []);
+
+  function updateField(name, value) {
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'categoria') {
+        next.marca = '';
+        next.modelo = '';
+      }
+      if (name === 'marca') {
+        next.modelo = '';
+      }
+      return next;
+    });
+  }
+
+  const marcasFiltradas = marcas.filter(
+    (marca) => String(marca.categoriaVehi) === String(form.categoria),
+  );
+  const modelosFiltrados = modelos.filter(
+    (modelo) => String(modelo.marcaVehi) === String(form.marca),
+  );
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setWarning('');
+
+    const incompleto = Object.values(form).some((value) => !String(value).trim());
+    if (incompleto) {
+      setWarning('Todos los campos son obligatorios.');
+      return;
+    }
+
+    if (!isValidPatente(form.patente)) {
+      setWarning('La patente debe tener el formato AA-123-AA.');
+      return;
+    }
+
+    const patente = form.patente.trim().toUpperCase();
+    const existentes = await listVehiculos();
+    const yaExiste = existentes.some(
+      (vehiculo) => String(vehiculo.patenteVehi).trim().toUpperCase() === patente,
+    );
+
+    if (yaExiste) {
+      setPopup({ message: 'Vehiculo ya registrado :/', action: 'clear' });
+      return;
+    }
+
+    try {
+      await createVehiculo({
+        patenteVehi: form.patente,
+        estadoVehi: true,
+        cliente: id,
+        modeloVehi: form.modelo,
+      });
+      setPopup({ message: 'Vehiculo agregado satisfactoriamente.', action: 'navigate' });
+    } catch {
+      setWarning('No se pudo registrar el vehiculo.');
+    }
+  }
+
+  function handlePopupClose() {
+    const action = popup?.action;
+    setPopup(null);
+    if (action === 'clear') {
+      setForm(EMPTY_FORM);
+    } else if (action === 'navigate') {
+      navigate(`/clientes/${id}/info`);
+    }
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  const inputClass =
+    'mt-1 w-full rounded-full bg-brand-input px-4 py-2 text-white outline-none';
+  const labelClass = 'block text-sm font-bold text-white';
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-brand-indigo p-6">
+      <div className="w-full max-w-md rounded-3xl bg-brand-pink p-6">
+        <h1 className="text-2xl font-extrabold text-[#5ea014]">Nuevo Vehiculo</h1>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="mt-4 rounded-2xl bg-brand-indigo p-4">
+            <div className="mb-3 flex justify-center">
+              <img src={autoIcon} alt="Vehiculo" className="h-10 w-10" />
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="categoria" className={labelClass}>
+                  Vehiculo
+                </label>
+                <select
+                  id="categoria"
+                  name="categoria"
+                  value={form.categoria}
+                  onChange={(event) => updateField('categoria', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {categorias.map((categoria) => (
+                    <option key={categoria.codigoCategoriaVehi} value={categoria.codigoCategoriaVehi}>
+                      {categoria.categoriaVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="marca" className={labelClass}>
+                  Marca
+                </label>
+                <select
+                  id="marca"
+                  name="marca"
+                  value={form.marca}
+                  onChange={(event) => updateField('marca', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {marcasFiltradas.map((marca) => (
+                    <option key={marca.codigoMarcaVehi} value={marca.codigoMarcaVehi}>
+                      {marca.marcaVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="modelo" className={labelClass}>
+                  Modelo
+                </label>
+                <select
+                  id="modelo"
+                  name="modelo"
+                  value={form.modelo}
+                  onChange={(event) => updateField('modelo', event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Seleccionar...</option>
+                  {modelosFiltrados.map((modelo) => (
+                    <option key={modelo.codigoModeloVehi} value={modelo.codigoModeloVehi}>
+                      {modelo.modeloVehi}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="patente" className={labelClass}>
+                  Patente
+                </label>
+                <input
+                  id="patente"
+                  name="patente"
+                  type="text"
+                  value={form.patente}
+                  onChange={(event) => updateField('patente', formatPatente(event.target.value))}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {warning ? (
+            <p role="alert" className="mt-3 text-sm font-bold text-red-700">
+              {warning}
+            </p>
+          ) : null}
+
+          <div className="mt-6 flex justify-center gap-6">
+            <button
+              type="submit"
+              className="rounded-full bg-[#5ea014] px-8 py-2 font-bold text-white"
+            >
+              Registrar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/clientes/${id}/info`)}
+              className="rounded-full bg-red-600 px-8 py-2 font-bold text-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {popup ? <Popup message={popup.message} onClose={handlePopupClose} /> : null}
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/NuevoVehiculoPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/NuevoVehiculoPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import NuevoVehiculoPage from './NuevoVehiculoPage.jsx';
+
+let sessionOk = true;
+let categorias = [];
+let marcas = [];
+let modelos = [];
+let vehiculos = [];
+let postOk = true;
+let postBody = null;
+
+function data(value) {
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: value }) });
+}
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/categorias-vehiculo') {
+    return data(categorias);
+  }
+  if (url === '/api/marcas-vehiculo') {
+    return data(marcas);
+  }
+  if (url === '/api/modelos-vehiculo') {
+    return data(modelos);
+  }
+  if (url === '/api/vehiculos' && options.method === 'POST') {
+    postBody = JSON.parse(options.body);
+    return Promise.resolve(
+      postOk
+        ? { ok: true, status: 201, json: () => Promise.resolve({ data: { codigoVehi: 9 } }) }
+        : { ok: false, status: 400 },
+    );
+  }
+  if (url === '/api/vehiculos') {
+    return data(vehiculos);
+  }
+  return data([]);
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/clientes/5/vehiculos/nuevo']}>
+      <Routes>
+        <Route path="/clientes/:id/vehiculos/nuevo" element={<NuevoVehiculoPage />} />
+        <Route path="/clientes/:id/info" element={<div>CLIENTE INFO PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+async function fillForm(user, overrides = {}) {
+  const values = { patente: 'AA123BB', ...overrides };
+
+  await user.selectOptions(screen.getByLabelText('Vehiculo'), '1');
+  await user.selectOptions(screen.getByLabelText('Marca'), '10');
+  await user.selectOptions(screen.getByLabelText('Modelo'), '100');
+  await user.type(screen.getByLabelText('Patente'), values.patente);
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  categorias = [{ codigoCategoriaVehi: 1, categoriaVehi: 'Auto' }];
+  marcas = [{ codigoMarcaVehi: 10, marcaVehi: 'Fiat', categoriaVehi: 1 }];
+  modelos = [{ codigoModeloVehi: 100, modeloVehi: 'Uno', marcaVehi: 10 }];
+  vehiculos = [];
+  postOk = true;
+  postBody = null;
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('NuevoVehiculoPage', () => {
+  test('muestra el título, los campos y los botones', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Nuevo Vehiculo')).toBeInTheDocument();
+    expect(screen.getByLabelText('Vehiculo')).toBeInTheDocument();
+    expect(screen.getByLabelText('Marca')).toBeInTheDocument();
+    expect(screen.getByLabelText('Modelo')).toBeInTheDocument();
+    expect(screen.getByLabelText('Patente')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+  });
+
+  test('las marcas dependen del vehículo y los modelos de la marca', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    expect(screen.queryByRole('option', { name: 'Fiat' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Vehiculo'), '1');
+    expect(screen.getByRole('option', { name: 'Fiat' })).toBeInTheDocument();
+
+    expect(screen.queryByRole('option', { name: 'Uno' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Marca'), '10');
+    expect(screen.getByRole('option', { name: 'Uno' })).toBeInTheDocument();
+  });
+
+  test('con un campo vacío advierte y no registra', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Todos los campos son obligatorios.');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  test('con patente inválida advierte y no registra', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await fillForm(user, { patente: 'AB254M' });
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La patente debe tener el formato AA-123-AA.',
+    );
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  test('con patente ya registrada muestra el popup y limpia el formulario', async () => {
+    vehiculos = [{ codigoVehi: 1, patenteVehi: 'AA-123-BB' }];
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Vehiculo ya registrado :/')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+
+    expect(screen.getByLabelText('Vehiculo')).toHaveValue('');
+    expect(screen.getByLabelText('Marca')).toHaveValue('');
+    expect(screen.getByLabelText('Modelo')).toHaveValue('');
+    expect(screen.getByLabelText('Patente')).toHaveValue('');
+  });
+
+  test('registra el vehículo, muestra el popup y vuelve a la información', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Vehiculo agregado satisfactoriamente.')).toBeInTheDocument();
+    expect(postBody).toEqual({
+      patenteVehi: 'AA-123-BB',
+      estadoVehi: true,
+      cliente: '5',
+      modeloVehi: '100',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Aceptar' }));
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+  });
+
+  test('ante un error de registro advierte y no navega', async () => {
+    postOk = false;
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await fillForm(user);
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No se pudo registrar el vehiculo.',
+    );
+    expect(screen.queryByText('CLIENTE INFO PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Cancelar vuelve a la información del cliente sin registrar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/vehiculos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  test('la patente se formatea mientras se tipea', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Nuevo Vehiculo');
+
+    await user.type(screen.getByLabelText('Patente'), 'ab254mc');
+
+    expect(screen.getByLabelText('Patente')).toHaveValue('AB-254-MC');
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/NuevoVehiculoPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/VehiculoInfoPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import ClienteVehiculoInfo from '../components/ClienteVehiculoInfo.jsx';
+import ConfirmPopup from '../components/ConfirmPopup.jsx';
+import Popup from '../components/Popup.jsx';
+import { fetchSession } from '../services/authService.js';
+import { deleteCliente } from '../services/clientService.js';
+import { MENSAJE_LAVADO_ACTIVO, tieneLavadoActivo } from '../services/lavadoService.js';
+import { deleteVehiculo, getVehiculo, listByCliente } from '../services/vehicleService.js';
+
+function toCliente(vehiculo) {
+  const persona = vehiculo?.datosCliente?.persona ?? {};
+  return {
+    codigoPersona: vehiculo?.cliente ?? vehiculo?.datosCliente?.codigoPersona,
+    dni: persona.dni,
+    nombre: persona.nombre,
+    apellido: persona.apellido,
+    celular: persona.celular,
+    email: persona.email,
+  };
+}
+
+export default function VehiculoInfoPage() {
+  const { vehiculoId } = useParams();
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [vehiculo, setVehiculo] = useState(null);
+  const [cliente, setCliente] = useState(null);
+  const [showDeleteCliente, setShowDeleteCliente] = useState(false);
+  const [showDeleteVehiculo, setShowDeleteVehiculo] = useState(false);
+  const [showBloqueo, setShowBloqueo] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        getVehiculo(vehiculoId).then((datos) => {
+          if (!active) {
+            return;
+          }
+          setVehiculo(datos);
+          setCliente(toCliente(datos));
+          setChecking(false);
+        });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [vehiculoId, navigate]);
+
+  async function clienteBloqueado() {
+    const lista = await listByCliente(cliente?.codigoPersona);
+    return tieneLavadoActivo(lista.map((item) => item.codigoVehi));
+  }
+
+  async function handleEditarCliente() {
+    if (await clienteBloqueado()) {
+      setShowBloqueo(true);
+      return;
+    }
+    navigate(`/clientes/${cliente?.codigoPersona}/editar`);
+  }
+
+  async function handleEliminarCliente() {
+    if (await clienteBloqueado()) {
+      setShowBloqueo(true);
+      return;
+    }
+    setShowDeleteCliente(true);
+  }
+
+  async function handleEditarVehiculo(item) {
+    if (await tieneLavadoActivo([item.codigoVehi])) {
+      setShowBloqueo(true);
+      return;
+    }
+    navigate(`/clientes/${cliente?.codigoPersona}/vehiculos/${item.codigoVehi}/editar`);
+  }
+
+  async function handleEliminarVehiculo(item) {
+    if (await tieneLavadoActivo([item.codigoVehi])) {
+      setShowBloqueo(true);
+      return;
+    }
+    setShowDeleteVehiculo(true);
+  }
+
+  async function handleConfirmDeleteCliente() {
+    try {
+      await deleteCliente(cliente?.codigoPersona);
+      navigate('/clientes');
+    } catch (error) {
+      setShowDeleteCliente(false);
+      if (error.status === 409) {
+        setShowBloqueo(true);
+        return;
+      }
+      navigate('/clientes');
+    }
+  }
+
+  async function handleConfirmDeleteVehiculo() {
+    try {
+      await deleteVehiculo(vehiculoId);
+      navigate('/vehiculos');
+    } catch (error) {
+      setShowDeleteVehiculo(false);
+      if (error.status === 409) {
+        setShowBloqueo(true);
+        return;
+      }
+      navigate('/vehiculos');
+    }
+  }
+
+  if (checking) {
+    return null;
+  }
+
+  return (
+    <>
+      <ClienteVehiculoInfo
+        cliente={cliente}
+        vehiculos={vehiculo ? [vehiculo] : []}
+        onNuevoVehiculo={() => navigate(`/clientes/${cliente?.codigoPersona}/vehiculos/nuevo`)}
+        onEditarCliente={handleEditarCliente}
+        onEliminarCliente={handleEliminarCliente}
+        onEditarVehiculo={handleEditarVehiculo}
+        onEliminarVehiculo={handleEliminarVehiculo}
+        onVolver={() => navigate('/vehiculos')}
+      />
+
+      {showDeleteCliente ? (
+        <ConfirmPopup
+          message={`¿ Desea eliminar al cliente "${cliente?.nombre ?? ''} ${cliente?.apellido ?? ''}" ?`}
+          onConfirm={handleConfirmDeleteCliente}
+          onCancel={() => setShowDeleteCliente(false)}
+        />
+      ) : null}
+
+      {showDeleteVehiculo ? (
+        <ConfirmPopup
+          message={`¿ Desea eliminar el vehiculo "${vehiculo?.patenteVehi ?? ''}" ?`}
+          onConfirm={handleConfirmDeleteVehiculo}
+          onCancel={() => setShowDeleteVehiculo(false)}
+        />
+      ) : null}
+
+      {showBloqueo ? (
+        <Popup message={MENSAJE_LAVADO_ACTIVO} onClose={() => setShowBloqueo(false)} />
+      ) : null}
+    </>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/VehiculoInfoPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/VehiculoInfoPage.test.jsx =====
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import VehiculoInfoPage from './VehiculoInfoPage.jsx';
+
+let sessionOk = true;
+let lavadosVehiculo = [];
+let vehiculosCliente = [];
+let deleteStatus = 204;
+
+const vehiculo = {
+  codigoVehi: 9,
+  patenteVehi: 'AB-122-FC',
+  cliente: 5,
+  modelo: {
+    codigoModeloVehi: 100,
+    modeloVehi: 'Picasso',
+    marca: {
+      codigoMarcaVehi: 10,
+      marcaVehi: 'Citroen',
+      categoria: { codigoCategoriaVehi: 1, categoriaVehi: 'Automovil' },
+    },
+  },
+  datosCliente: {
+    codigoPersona: 5,
+    estadoCliente: true,
+    persona: {
+      dni: 28853432,
+      nombre: 'Juan',
+      apellido: 'Perez',
+      celular: 555,
+      email: 'juan@gmail.com',
+    },
+  },
+};
+
+function mockFetch(url, options = {}) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/vehiculos/9' && options.method === 'DELETE') {
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
+  }
+  if (url === '/api/clientes/5' && options.method === 'DELETE') {
+    return Promise.resolve({ ok: deleteStatus < 400, status: deleteStatus });
+  }
+  if (url === '/api/vehiculos?cliente=5') {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: vehiculosCliente }),
+    });
+  }
+  if (url === '/api/lavados?vehi=9') {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ data: lavadosVehiculo }),
+    });
+  }
+  if (url === '/api/vehiculos/9') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: vehiculo }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/vehiculos/9/info']}>
+      <Routes>
+        <Route path="/vehiculos/:vehiculoId/info" element={<VehiculoInfoPage />} />
+        <Route path="/vehiculos" element={<div>VEHICULOS PAGE</div>} />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/clientes/:id/editar" element={<div>EDITAR CLIENTE PAGE</div>} />
+        <Route
+          path="/clientes/:id/vehiculos/:vehiculoId/editar"
+          element={<div>EDITAR VEHICULO PAGE</div>}
+        />
+        <Route path="/clientes/:id/vehiculos/nuevo" element={<div>NUEVO VEHICULO PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  lavadosVehiculo = [];
+  vehiculosCliente = [];
+  deleteStatus = 204;
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('VehiculoInfoPage', () => {
+  test('muestra el vehículo y los datos de su cliente', async () => {
+    renderPage();
+
+    expect(await screen.findByText('LavAutos oPreto')).toBeInTheDocument();
+    expect(screen.getByText('28853432')).toBeInTheDocument();
+    expect(screen.getByText('Juan')).toBeInTheDocument();
+    expect(screen.getByText('Perez')).toBeInTheDocument();
+    expect(screen.getByText('juan@gmail.com')).toBeInTheDocument();
+    expect(screen.getByText('Automovil')).toBeInTheDocument();
+    expect(screen.getByText('Citroen')).toBeInTheDocument();
+    expect(screen.getByText('Picasso')).toBeInTheDocument();
+    expect(screen.getByText('AB-122-FC')).toBeInTheDocument();
+  });
+
+  test('muestra sólo el vehículo encontrado', async () => {
+    renderPage();
+
+    await screen.findByTestId('vehiculo-card');
+
+    expect(screen.getAllByTestId('vehiculo-card')).toHaveLength(1);
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('Volver navega a Vehiculos', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('LavAutos oPreto');
+
+    await user.click(screen.getByRole('button', { name: '←' }));
+
+    expect(await screen.findByText('VEHICULOS PAGE')).toBeInTheDocument();
+  });
+
+  test('+ VEHICULO navega al alta de vehículo del cliente', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const card = await screen.findByTestId('cliente-card');
+    await user.click(within(card).getByRole('button', { name: '+ VEHICULO' }));
+
+    expect(await screen.findByText('NUEVO VEHICULO PAGE')).toBeInTheDocument();
+  });
+
+  test('Editar del cliente navega a la edición del cliente', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const card = await screen.findByTestId('cliente-card');
+    await user.click(within(card).getByRole('button', { name: 'Editar' }));
+
+    expect(await screen.findByText('EDITAR CLIENTE PAGE')).toBeInTheDocument();
+  });
+
+  test('Editar del vehículo navega a la edición del vehículo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Editar' }));
+
+    expect(await screen.findByText('EDITAR VEHICULO PAGE')).toBeInTheDocument();
+  });
+
+  test('Eliminar el vehículo confirma y vuelve a Vehiculos', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+
+    expect(screen.getByText('¿ Desea eliminar el vehiculo "AB-122-FC" ?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/vehiculos/9',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    expect(await screen.findByText('VEHICULOS PAGE')).toBeInTheDocument();
+  });
+
+  test('Editar del vehículo con lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR VEHICULO PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar el vehículo con lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Lavando' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('Editar del cliente con un vehículo en lavado activo muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    vehiculosCliente = [{ codigoVehi: 9 }];
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'Terminado' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('cliente-card');
+    await user.click(within(card).getByRole('button', { name: 'Editar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('EDITAR CLIENTE PAGE')).not.toBeInTheDocument();
+  });
+
+  test('Eliminar el cliente con un vehículo en lavado activo muestra el aviso y no abre la confirmación', async () => {
+    const user = userEvent.setup();
+    vehiculosCliente = [{ codigoVehi: 9 }];
+    lavadosVehiculo = [{ datosEstado: { descripcionEstado: 'En Espera' } }];
+    renderPage();
+
+    const card = await screen.findByTestId('cliente-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'ACEPTAR' })).not.toBeInTheDocument();
+  });
+
+  test('ACEPTAR con 409 muestra el aviso y no navega', async () => {
+    const user = userEvent.setup();
+    deleteStatus = 409;
+    renderPage();
+
+    const card = await screen.findByTestId('vehiculo-card');
+    await user.click(within(card).getByRole('button', { name: 'Eliminar' }));
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(
+      await screen.findByText('Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('VEHICULOS PAGE')).not.toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/VehiculoInfoPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/VehiculosPage.jsx =====
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AppHeader from '../components/AppHeader.jsx';
+import { fetchSession } from '../services/authService.js';
+import { listVehiculos } from '../services/vehicleService.js';
+
+const COLUMNS = ['TIPO', 'MARCA', 'MODELO', 'PATENTE'];
+const ROW_COLORS = ['#f4e6e6', '#b4b2b2'];
+
+function matches(vehiculo, termino) {
+  const texto = termino.trim().toUpperCase();
+  if (!texto) {
+    return false;
+  }
+  const patente = String(vehiculo.patenteVehi ?? '').toUpperCase();
+  const modelo = String(vehiculo.modelo?.modeloVehi ?? '').toUpperCase();
+  return patente.includes(texto) || modelo.includes(texto);
+}
+
+export default function VehiculosPage() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [term, setTerm] = useState('');
+  const [vehiculos, setVehiculos] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchSession()
+      .then((ok) => {
+        if (!active) {
+          return;
+        }
+        if (!ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        listVehiculos().then((lista) => {
+          if (active) {
+            setVehiculos(lista);
+            setChecking(false);
+          }
+        });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  if (checking) {
+    return null;
+  }
+
+  const resultados = vehiculos.filter((vehiculo) => matches(vehiculo, term));
+
+  return (
+    <div className="min-h-screen bg-brand-indigo p-6">
+      <AppHeader />
+
+      <div className="mx-auto mt-2 max-w-3xl rounded-3xl border-4 border-gray-500 p-6">
+        <div className="flex items-center justify-between">
+          <span className="inline-block rounded-full bg-[#2637a2] px-6 py-1 text-sm font-bold text-white">
+            VEHICULOS
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate('/clientes')}
+            className="rounded-full bg-green-600 px-6 py-2 font-bold text-white"
+          >
+            + Vehiculo
+          </button>
+        </div>
+
+        <div className="mx-auto mt-4 flex max-w-2xl items-center rounded-2xl bg-[#8f8a8a] p-3">
+          <input
+            type="text"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            placeholder="Patente..."
+            aria-label="Buscar vehiculos"
+            className="flex-1 rounded-full bg-[#f4e6e6] px-4 py-2 text-brand-navy outline-none"
+          />
+        </div>
+
+        <div className="mx-auto mt-4 max-w-2xl rounded-2xl bg-[#2637a2] p-4">
+          <table className="w-full text-center">
+            <thead>
+              <tr className="text-gray-400">
+                {COLUMNS.map((col) => (
+                  <th key={col} className="p-2 text-sm font-bold">
+                    {col}
+                  </th>
+                ))}
+                <th className="p-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {resultados.length > 0 ? (
+                resultados.map((vehiculo, index) => (
+                  <tr
+                    key={vehiculo.codigoVehi}
+                    data-testid="vehiculo-row"
+                    style={{ backgroundColor: ROW_COLORS[index % ROW_COLORS.length] }}
+                  >
+                    <td className="p-2">{vehiculo.modelo?.marca?.categoria?.categoriaVehi}</td>
+                    <td className="p-2">{vehiculo.modelo?.marca?.marcaVehi}</td>
+                    <td className="p-2">{vehiculo.modelo?.modeloVehi}</td>
+                    <td className="p-2">{vehiculo.patenteVehi}</td>
+                    <td className="p-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/vehiculos/${vehiculo.codigoVehi}/info`)}
+                        className="rounded-full bg-[#7eb93c] px-4 py-1 font-bold text-white"
+                      >
+                        <span className="text-lg">+</span> info
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={COLUMNS.length + 1} className="p-6 text-center font-bold text-gray-400">
+                    Busqueda sin resultados ...
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => navigate('/home')}
+            className="rounded-2xl bg-green-600 px-4 py-2 text-xl font-bold text-white"
+          >
+            ← <span className="text-lg">Volver</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/pages/VehiculosPage.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/pages/VehiculosPage.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import VehiculosPage from './VehiculosPage.jsx';
+
+let sessionOk = true;
+let vehiculos = [];
+
+function baseVehiculos() {
+  return [
+    {
+      codigoVehi: 1,
+      patenteVehi: 'AB-122-FC',
+      modelo: {
+        modeloVehi: 'Picasso',
+        marca: { marcaVehi: 'Citroen', categoria: { categoriaVehi: 'Automovil' } },
+      },
+    },
+    {
+      codigoVehi: 2,
+      patenteVehi: 'XY-999-ZZ',
+      modelo: {
+        modeloVehi: 'Corolla',
+        marca: { marcaVehi: 'Toyota', categoria: { categoriaVehi: 'Automovil' } },
+      },
+    },
+  ];
+}
+
+function mockFetch(url) {
+  if (url === '/api/auth/session') {
+    return Promise.resolve({ ok: sessionOk, status: sessionOk ? 200 : 401 });
+  }
+  if (url === '/api/vehiculos') {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: vehiculos }) });
+  }
+  return Promise.resolve({ ok: true, json: () => Promise.resolve({ data: [] }) });
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/vehiculos']}>
+      <Routes>
+        <Route path="/vehiculos" element={<VehiculosPage />} />
+        <Route path="/vehiculos/:vehiculoId/info" element={<div>VEHICULO INFO PAGE</div>} />
+        <Route path="/clientes" element={<div>CLIENTES PAGE</div>} />
+        <Route path="/home" element={<div>HOME PAGE</div>} />
+        <Route path="/login" element={<div>LOGIN PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  sessionOk = true;
+  vehiculos = baseVehiculos();
+  globalThis.fetch = vi.fn(mockFetch);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('VehiculosPage', () => {
+  test('muestra el pill, el buscador y la tabla', async () => {
+    renderPage();
+
+    expect(await screen.findByLabelText('Buscar vehiculos')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Patente...')).toBeInTheDocument();
+    expect(screen.getByText('VEHICULOS')).toBeInTheDocument();
+    expect(screen.getByText('TIPO')).toBeInTheDocument();
+    expect(screen.getByText('MARCA')).toBeInTheDocument();
+    expect(screen.getByText('MODELO')).toBeInTheDocument();
+    expect(screen.getByText('PATENTE')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Volver' })).toBeInTheDocument();
+  });
+
+  test('sin sesión válida redirige al login', async () => {
+    sessionOk = false;
+    renderPage();
+
+    expect(await screen.findByText('LOGIN PAGE')).toBeInTheDocument();
+  });
+
+  test('sin parámetros no muestra vehículos', async () => {
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    expect(screen.queryAllByTestId('vehiculo-row')).toHaveLength(0);
+    expect(screen.getByText('Busqueda sin resultados ...')).toBeInTheDocument();
+  });
+
+  test('busca por parte de la patente', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.type(screen.getByLabelText('Buscar vehiculos'), '122');
+
+    expect(await screen.findByText('AB-122-FC')).toBeInTheDocument();
+    expect(screen.queryByText('XY-999-ZZ')).not.toBeInTheDocument();
+  });
+
+  test('busca por parte del modelo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.type(screen.getByLabelText('Buscar vehiculos'), 'corolla');
+
+    expect(await screen.findByText('XY-999-ZZ')).toBeInTheDocument();
+    expect(screen.queryByText('AB-122-FC')).not.toBeInTheDocument();
+  });
+
+  test('sin coincidencias muestra "Busqueda sin resultados ..."', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.type(screen.getByLabelText('Buscar vehiculos'), 'zzz');
+
+    expect(screen.getByText('Busqueda sin resultados ...')).toBeInTheDocument();
+  });
+
+  test('muestra filas alternadas y un botón + info por fila', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.type(screen.getByLabelText('Buscar vehiculos'), 'o');
+
+    const rows = await screen.findAllByTestId('vehiculo-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].style.backgroundColor).toContain('244');
+    expect(rows[1].style.backgroundColor).toContain('180');
+    expect(screen.getAllByRole('button', { name: '+ info' })).toHaveLength(2);
+  });
+
+  test('+ info navega a la página del vehículo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.type(screen.getByLabelText('Buscar vehiculos'), '122');
+    await user.click(await screen.findByRole('button', { name: '+ info' }));
+
+    expect(await screen.findByText('VEHICULO INFO PAGE')).toBeInTheDocument();
+  });
+
+  test('+ Vehiculo navega a la página de Clientes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.click(screen.getByRole('button', { name: '+ Vehiculo' }));
+
+    expect(await screen.findByText('CLIENTES PAGE')).toBeInTheDocument();
+  });
+  test('Volver navega al home', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByLabelText('Buscar vehiculos');
+
+    await user.click(screen.getByRole('button', { name: '← Volver' }));
+
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/pages/VehiculosPage.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/authService.js =====
+export async function login(usuario, contrasena) {
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ usuario, contrasena }),
+  });
+
+  return response.ok;
+}
+
+export async function fetchSession() {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include',
+  });
+
+  return response.ok;
+}
+
+export async function fetchSessionData() {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const body = await response.json();
+  return body.data ?? null;
+}
+
+export async function logout() {
+  await fetch('/api/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+  });
+}
+===== FIN ARCHIVO: src/frontend/src/services/authService.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/clientService.js =====
+export async function searchClientes(texto) {
+  const response = await fetch(`/api/clientes?buscar=${encodeURIComponent(texto)}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const body = await response.json();
+  return body.data ?? [];
+}
+
+export async function listClientesSinLavados(desde) {
+  const response = await fetch(
+    `/api/clientes?sinLavadosDesde=${encodeURIComponent(desde)}`,
+    { credentials: 'include' },
+  );
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const body = await response.json();
+  return body.data ?? [];
+}
+
+export async function getCliente(id) {
+  const response = await fetch(`/api/clientes/${id}`, { credentials: 'include' });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function deleteCliente(id) {
+  const response = await fetch(`/api/clientes/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = new Error('No se pudo eliminar el cliente.');
+    error.status = response.status;
+    throw error;
+  }
+}
+
+export async function updateCliente(id, datos) {
+  const response = await fetch(`/api/clientes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(datos),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo actualizar el cliente.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function createCliente(cliente) {
+  const response = await fetch('/api/clientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(cliente),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo crear el cliente.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+===== FIN ARCHIVO: src/frontend/src/services/clientService.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/clientService.test.js =====
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import {
+  createCliente,
+  deleteCliente,
+  getCliente,
+  listClientesSinLavados,
+  searchClientes,
+  updateCliente,
+} from './clientService.js';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('clientService', () => {
+  test('searchClientes consulta GET /api/clientes?buscar= con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [{ codigoPersona: 1 }] }),
+    });
+
+    const data = await searchClientes('juan');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/clientes?buscar=juan', {
+      credentials: 'include',
+    });
+    expect(data).toEqual([{ codigoPersona: 1 }]);
+  });
+
+  test('listClientesSinLavados consulta GET /api/clientes?sinLavadosDesde=', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [{ codigoPersona: 1 }] }),
+    });
+
+    const data = await listClientesSinLavados('2026-05-01');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/clientes?sinLavadosDesde=2026-05-01',
+      { credentials: 'include' },
+    );
+    expect(data).toEqual([{ codigoPersona: 1 }]);
+  });
+
+  test('getCliente hace GET /api/clientes/:id con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { codigoPersona: 5 } }),
+    });
+
+    const data = await getCliente(5);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/clientes/5', { credentials: 'include' });
+    expect(data).toEqual({ codigoPersona: 5 });
+  });
+
+  test('deleteCliente hace DELETE /api/clientes/:id con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+
+    await deleteCliente(5);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/clientes/5', {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+  });
+
+  test('deleteCliente adjunta el estado HTTP al error', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 409 });
+
+    await expect(deleteCliente(5)).rejects.toMatchObject({ status: 409 });
+  });
+
+  test('updateCliente hace PUT /api/clientes/:id con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { codigoPersona: 5 } }),
+    });
+
+    await updateCliente(5, { nombre: 'A' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/clientes/5',
+      expect.objectContaining({ method: 'PUT', credentials: 'include' }),
+    );
+  });
+
+  test('createCliente hace POST /api/clientes con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { codigoPersona: 7 } }),
+    });
+
+    const data = await createCliente({ nombre: 'A' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/clientes',
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    );
+    expect(data).toEqual({ codigoPersona: 7 });
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/services/clientService.test.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/lavadoService.js =====
+const ESTADOS_BLOQUEANTES = ['en espera', 'lavando', 'terminado'];
+
+export const MENSAJE_LAVADO_ACTIVO =
+  'Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado';
+
+function normalizarEstado(texto) {
+  return String(texto ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+async function listResource(path) {
+  const response = await fetch(path, { credentials: 'include' });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const body = await response.json();
+  return body.data ?? [];
+}
+
+export function listByVehiculo(vehi) {
+  return listResource(`/api/lavados?vehi=${encodeURIComponent(vehi)}`);
+}
+
+export async function tieneLavadoActivo(vehiculoIds = []) {
+  const ids = vehiculoIds.filter((id) => id !== undefined && id !== null);
+
+  if (ids.length === 0) {
+    return false;
+  }
+
+  const listas = await Promise.all(ids.map((id) => listByVehiculo(id)));
+
+  return listas.some((lavados) =>
+    lavados.some((lavado) =>
+      ESTADOS_BLOQUEANTES.includes(normalizarEstado(lavado.datosEstado?.descripcionEstado)),
+    ),
+  );
+}
+
+export function listLavados(filtros = {}) {
+  const params = new URLSearchParams();
+  ['estado', 'vehi', 'desde', 'hasta'].forEach((campo) => {
+    if (filtros[campo] !== undefined && filtros[campo] !== null && filtros[campo] !== '') {
+      params.set(campo, filtros[campo]);
+    }
+  });
+  const query = params.toString();
+  return listResource(query ? `/api/lavados?${query}` : '/api/lavados');
+}
+
+export function listUtileria() {
+  return listResource('/api/utilerias');
+}
+
+export function listCategoriasLavado() {
+  return listResource('/api/categorias-lavado');
+}
+
+export function listEstadosLavado() {
+  return listResource('/api/estados-lavado');
+}
+
+export async function getLavado(id) {
+  const response = await fetch(`/api/lavados/${id}`, { credentials: 'include' });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const body = await response.json();
+  return body.data ?? null;
+}
+
+export async function createLavado(lavado) {
+  const response = await fetch('/api/lavados', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(lavado),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo registrar el lavado.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function updateLavado(id, cambios) {
+  const response = await fetch(`/api/lavados/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(cambios),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo actualizar el lavado.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function updateUtileria(id, cambios) {
+  const response = await fetch(`/api/utilerias/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(cambios),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo actualizar la utileria.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+===== FIN ARCHIVO: src/frontend/src/services/lavadoService.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/lavadoService.test.js =====
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import {
+  createLavado,
+  getLavado,
+  listByVehiculo,
+  listCategoriasLavado,
+  listEstadosLavado,
+  listLavados,
+  listUtileria,
+  MENSAJE_LAVADO_ACTIVO,
+  tieneLavadoActivo,
+  updateLavado,
+  updateUtileria,
+} from './lavadoService.js';
+
+function mockJson(data) {
+  globalThis.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ data }),
+  });
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('lavadoService', () => {
+  test('listByVehiculo consulta GET /api/lavados?vehi=', async () => {
+    mockJson([]);
+
+    await listByVehiculo(9);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados?vehi=9', {
+      credentials: 'include',
+    });
+  });
+
+  test('tieneLavadoActivo detecta En Espera, Lavando y Terminado', async () => {
+    for (const estado of ['En Espera', 'Lavando', 'Terminado']) {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ data: [{ datosEstado: { descripcionEstado: estado } }] }),
+      });
+
+      expect(await tieneLavadoActivo([1])).toBe(true);
+    }
+  });
+
+  test('tieneLavadoActivo no bloquea con Entregado ni sin vehículos', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ data: [{ datosEstado: { descripcionEstado: 'Entregado' } }] }),
+    });
+
+    expect(await tieneLavadoActivo([2])).toBe(false);
+    expect(await tieneLavadoActivo([])).toBe(false);
+  });
+
+  test('expone el mensaje de lavado activo', () => {
+    expect(MENSAJE_LAVADO_ACTIVO).toBe(
+      'Edicion / Eliminacion cancelada...Vehiculo en estado de Lavado',
+    );
+  });
+
+  test('listLavados consulta GET /api/lavados', async () => {
+    mockJson([]);
+
+    await listLavados();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados', { credentials: 'include' });
+  });
+
+  test('listLavados arma la query con los filtros recibidos', async () => {
+    mockJson([]);
+
+    await listLavados({ estado: 3, desde: '2026-01-01', hasta: '2026-01-31' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/lavados?estado=3&desde=2026-01-01&hasta=2026-01-31',
+      { credentials: 'include' },
+    );
+  });
+
+  test('getLavado consulta GET /api/lavados/:id y devuelve null si falla', async () => {
+    mockJson({ codigoLavado: 4 });
+
+    const data = await getLavado(4);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/lavados/4', { credentials: 'include' });
+    expect(data).toEqual({ codigoLavado: 4 });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
+
+    expect(await getLavado(5)).toBeNull();
+  });
+
+  test('updateLavado hace PUT /api/lavados/:id', async () => {
+    mockJson({ codigoLavado: 4, estado: 3 });
+
+    await updateLavado(4, { estado: 3 });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/lavados/4',
+      expect.objectContaining({ method: 'PUT', credentials: 'include' }),
+    );
+  });
+
+  test('lista los catálogos de lavado', async () => {
+    mockJson([]);
+
+    await listUtileria();
+    await listCategoriasLavado();
+    await listEstadosLavado();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/utilerias', { credentials: 'include' });
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/categorias-lavado', {
+      credentials: 'include',
+    });
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/estados-lavado', {
+      credentials: 'include',
+    });
+  });
+
+  test('createLavado hace POST /api/lavados con credentials include', async () => {
+    mockJson({ codigoLavado: 1 });
+
+    const data = await createLavado({ vehi: 9 });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/lavados',
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    );
+    expect(data).toEqual({ codigoLavado: 1 });
+  });
+
+  test('updateUtileria hace PUT /api/utilerias/:id', async () => {
+    mockJson({ estadoUtileria: true });
+
+    await updateUtileria(1, { estadoUtileria: true });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/utilerias/1',
+      expect.objectContaining({ method: 'PUT', credentials: 'include' }),
+    );
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/services/lavadoService.test.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/vehicleService.js =====
+async function listResource(path) {
+  const response = await fetch(path, { credentials: 'include' });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const body = await response.json();
+  return body.data ?? [];
+}
+
+export function listCategorias() {
+  return listResource('/api/categorias-vehiculo');
+}
+
+export function listMarcas() {
+  return listResource('/api/marcas-vehiculo');
+}
+
+export function listModelos() {
+  return listResource('/api/modelos-vehiculo');
+}
+
+export function listByCliente(cliente) {
+  return listResource(`/api/vehiculos?cliente=${encodeURIComponent(cliente)}`);
+}
+
+export function listVehiculos() {
+  return listResource('/api/vehiculos');
+}
+
+export async function getVehiculo(id) {
+  const response = await fetch(`/api/vehiculos/${id}`, { credentials: 'include' });
+
+  if (!response.ok) {
+    throw new Error('No se pudo obtener el vehiculo.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function createVehiculo(vehiculo) {
+  const response = await fetch('/api/vehiculos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(vehiculo),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo crear el vehiculo.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function updateVehiculo(id, vehiculo) {
+  const response = await fetch(`/api/vehiculos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(vehiculo),
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo actualizar el vehiculo.');
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+
+export async function deleteVehiculo(id) {
+  const response = await fetch(`/api/vehiculos/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const error = new Error('No se pudo eliminar el vehiculo.');
+    error.status = response.status;
+    throw error;
+  }
+}
+===== FIN ARCHIVO: src/frontend/src/services/vehicleService.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/services/vehicleService.test.js =====
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import {
+  createVehiculo,
+  deleteVehiculo,
+  listByCliente,
+  listCategorias,
+  listMarcas,
+  listModelos,
+} from './vehicleService.js';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('vehicleService', () => {
+  test('listCategorias consulta GET /api/categorias-vehiculo', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: [] }) });
+
+    await listCategorias();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/categorias-vehiculo', {
+      credentials: 'include',
+    });
+  });
+
+  test('listMarcas consulta GET /api/marcas-vehiculo', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: [] }) });
+
+    await listMarcas();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/marcas-vehiculo', {
+      credentials: 'include',
+    });
+  });
+
+  test('listModelos consulta GET /api/modelos-vehiculo', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: [] }) });
+
+    await listModelos();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/modelos-vehiculo', {
+      credentials: 'include',
+    });
+  });
+
+  test('listByCliente consulta GET /api/vehiculos?cliente=', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: [] }) });
+
+    await listByCliente(5);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/vehiculos?cliente=5', {
+      credentials: 'include',
+    });
+  });
+
+  test('deleteVehiculo hace DELETE /api/vehiculos/:id con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+
+    await deleteVehiculo(9);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/vehiculos/9', {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+  });
+
+  test('deleteVehiculo adjunta el estado HTTP al error', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 409 });
+
+    await expect(deleteVehiculo(9)).rejects.toMatchObject({ status: 409 });
+  });
+
+  test('createVehiculo hace POST /api/vehiculos con credentials include', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { codigoVehi: 3 } }),
+    });
+
+    const data = await createVehiculo({ patenteVehi: 'AA123BB' });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/vehiculos',
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    );
+    expect(data).toEqual({ codigoVehi: 3 });
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/services/vehicleService.test.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/test/setup.js =====
+import '@testing-library/jest-dom/vitest';
+===== FIN ARCHIVO: src/frontend/src/test/setup.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/utils/formatDateTime.js =====
+const TIME_ZONE = 'America/Argentina/Buenos_Aires';
+
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function partsToMap(parts) {
+  return parts.reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+}
+
+export function formatDate(date) {
+  const parts = new Intl.DateTimeFormat('es-AR', {
+    timeZone: TIME_ZONE,
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(date);
+  const map = partsToMap(parts);
+
+  return `${capitalize(map.weekday || '')} ${map.day}/${map.month}/${map.year}`;
+}
+
+export function formatTime(date) {
+  const parts = new Intl.DateTimeFormat('es-AR', {
+    timeZone: TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).formatToParts(date);
+  const map = partsToMap(parts);
+  const period = (map.dayPeriod || '').replace(/[^a-zA-Z]/g, '').toLowerCase() || 'am';
+
+  return { hour: map.hour || '', minute: map.minute || '', period };
+}
+===== FIN ARCHIVO: src/frontend/src/utils/formatDateTime.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/utils/formatDateTime.test.js =====
+import { describe, expect, test } from 'vitest';
+import { formatDate, formatTime } from './formatDateTime.js';
+
+describe('formatDateTime', () => {
+  // 2026-09-08T01:20:00Z -> 2026-09-07 22:20 en Buenos Aires (UTC-03:00)
+  const date = new Date('2026-09-08T01:20:00Z');
+
+  test('formatea la fecha en UTC-03:00 con el día capitalizado', () => {
+    expect(formatDate(date)).toBe('Lunes 07/09/2026');
+  });
+
+  test('formatea la hora en 12 horas con am/pm sin puntos', () => {
+    expect(formatTime(date)).toEqual({ hour: '10', minute: '20', period: 'pm' });
+  });
+
+  test('usa la zona horaria de Buenos Aires (no la del navegador)', () => {
+    const morning = new Date('2026-09-07T13:05:00Z'); // 10:05 en Buenos Aires
+    expect(formatTime(morning)).toEqual({ hour: '10', minute: '05', period: 'am' });
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/utils/formatDateTime.test.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/utils/validators.js =====
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PATENTE_PATTERN = /^[A-Z]{2}-\d{3}-[A-Z]{2}$/;
+const PATENTE_TYPES = ['L', 'L', 'N', 'N', 'N', 'L', 'L'];
+
+export function isValidEmail(texto) {
+  return EMAIL_PATTERN.test(String(texto).trim());
+}
+
+export function isValidPatente(texto) {
+  return PATENTE_PATTERN.test(String(texto).trim());
+}
+
+export function formatPatente(texto) {
+  const raw = String(texto)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+
+  let value = '';
+  let index = 0;
+
+  for (const char of raw) {
+    if (index >= PATENTE_TYPES.length) {
+      break;
+    }
+
+    const expected = PATENTE_TYPES[index];
+    const isLetter = char >= 'A' && char <= 'Z';
+    const isNumber = char >= '0' && char <= '9';
+
+    if ((expected === 'L' && isLetter) || (expected === 'N' && isNumber)) {
+      value += char;
+      index += 1;
+    }
+  }
+
+  const letters1 = value.slice(0, 2);
+  const numbers = value.slice(2, 5);
+  const letters2 = value.slice(5, 7);
+
+  let formatted = letters1;
+  if (value.length > 2) {
+    formatted += `-${numbers}`;
+  }
+  if (value.length > 5) {
+    formatted += `-${letters2}`;
+  }
+
+  return formatted;
+}
+
+export function onlyDigits(texto) {
+  return String(texto).replace(/\D/g, '');
+}
+
+export function onlyLetters(texto) {
+  return String(texto).replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
+}
+===== FIN ARCHIVO: src/frontend/src/utils/validators.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/utils/validators.test.js =====
+import { describe, expect, test } from 'vitest';
+import {
+  formatPatente,
+  isValidEmail,
+  isValidPatente,
+  onlyDigits,
+  onlyLetters,
+} from './validators.js';
+
+describe('validators', () => {
+  test('isValidEmail acepta un correo válido y rechaza uno inválido', () => {
+    expect(isValidEmail('fernando@gmail.com')).toBe(true);
+    expect(isValidEmail('fernando@')).toBe(false);
+    expect(isValidEmail('fernando')).toBe(false);
+  });
+
+  test('formatPatente aplica la máscara', () => {
+    expect(formatPatente('ab254mc')).toBe('AB-254-MC');
+    expect(formatPatente('AB2')).toBe('AB-2');
+    expect(formatPatente('AB254')).toBe('AB-254');
+  });
+
+  test('formatPatente descarta el tipo incorrecto', () => {
+    expect(formatPatente('A1B254MC')).toBe('AB-254-MC');
+    expect(formatPatente('1')).toBe('');
+  });
+
+  test('isValidPatente acepta el formato completo y rechaza incompletos', () => {
+    expect(isValidPatente('AB-254-MC')).toBe(true);
+    expect(isValidPatente('AB-254-M')).toBe(false);
+    expect(isValidPatente('A-254-MC')).toBe(false);
+  });
+
+  test('onlyDigits conserva solo números', () => {
+    expect(onlyDigits('12a3')).toBe('123');
+    expect(onlyDigits('a-b c')).toBe('');
+  });
+
+  test('onlyLetters conserva solo letras con acentos y ñ', () => {
+    expect(onlyLetters('Muñoz 1')).toBe('Muñoz');
+    expect(onlyLetters('Ángel')).toBe('Ángel');
+    expect(onlyLetters('A1-B')).toBe('AB');
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/utils/validators.test.js =====
+
+===== INICIO ARCHIVO: src/frontend/src/App.jsx =====
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import LoginPage from './pages/LoginPage.jsx';
+import HomePage from './pages/HomePage.jsx';
+import ClientesPage from './pages/ClientesPage.jsx';
+import NuevoClientePage from './pages/NuevoClientePage.jsx';
+import ClienteInfoPage from './pages/ClienteInfoPage.jsx';
+import EditarClientePage from './pages/EditarClientePage.jsx';
+import NuevoVehiculoPage from './pages/NuevoVehiculoPage.jsx';
+import EditarVehiculoPage from './pages/EditarVehiculoPage.jsx';
+import VehiculosPage from './pages/VehiculosPage.jsx';
+import VehiculoInfoPage from './pages/VehiculoInfoPage.jsx';
+import NuevoLavadoPage from './pages/NuevoLavadoPage.jsx';
+import LavadosPage from './pages/LavadosPage.jsx';
+import EditarLavadoPage from './pages/EditarLavadoPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/clientes" element={<ClientesPage />} />
+      <Route path="/clientes/nuevo" element={<NuevoClientePage />} />
+      <Route path="/clientes/:id/info" element={<ClienteInfoPage />} />
+      <Route path="/clientes/:id/editar" element={<EditarClientePage />} />
+      <Route path="/clientes/:id/vehiculos/nuevo" element={<NuevoVehiculoPage />} />
+      <Route path="/clientes/:id/vehiculos/:vehiculoId/editar" element={<EditarVehiculoPage />} />
+      <Route path="/vehiculos" element={<VehiculosPage />} />
+      <Route path="/vehiculos/:vehiculoId/info" element={<VehiculoInfoPage />} />
+      <Route path="/clientes/:id/vehiculos/:vehiculoId/lavar" element={<NuevoLavadoPage />} />
+      <Route path="/lavados" element={<LavadosPage />} />
+      <Route path="/lavados/:lavadoId/editar" element={<EditarLavadoPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  );
+}
+===== FIN ARCHIVO: src/frontend/src/App.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/App.test.jsx =====
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { AppRoutes } from './App.jsx';
+
+beforeEach(() => {
+  globalThis.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ data: [] }),
+  });
+});
+
+describe('rutas', () => {
+  test('/login muestra la página de inicio de sesión', () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Iniciar Sesion' })).toBeInTheDocument();
+  });
+
+  test('/ redirige al login', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Iniciar Sesion' })).toBeInTheDocument();
+  });
+
+  test('/home muestra la pantalla home', async () => {
+    render(
+      <MemoryRouter initialEntries={['/home']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('button', { name: 'CLIENTES' })).toBeInTheDocument();
+  });
+
+  test('/clientes muestra la página de Clientes', async () => {
+    render(
+      <MemoryRouter initialEntries={['/clientes']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByLabelText('Buscar clientes')).toBeInTheDocument();
+  });
+
+  test('/clientes/nuevo muestra la página Nuevo Cliente', async () => {
+    render(
+      <MemoryRouter initialEntries={['/clientes/nuevo']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Nuevo Cliente')).toBeInTheDocument();
+  });
+
+  test('/clientes/:id/info muestra la página de información del cliente', async () => {
+    render(
+      <MemoryRouter initialEntries={['/clientes/1/info']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('LavAutos oPreto')).toBeInTheDocument();
+  });
+
+  test('/clientes/:id/editar muestra la página Editar Cliente', async () => {
+    render(
+      <MemoryRouter initialEntries={['/clientes/1/editar']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Editar Cliente')).toBeInTheDocument();
+  });
+});
+===== FIN ARCHIVO: src/frontend/src/App.test.jsx =====
+
+===== INICIO ARCHIVO: src/frontend/src/index.css =====
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-indigo: #7b80e8;
+  --color-brand-pink: #f6dada;
+  --color-brand-title: #5a6fd8;
+  --color-brand-navy: #1f2a66;
+  --color-brand-input: #9c9c9c;
+  --color-brand-green: #5cb85c;
+  --color-brand-panel: #1f3a93;
+}
+
+@keyframes nuevo-lavado-horizontal {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(12px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes burbuja-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-nuevo-lavado {
+  animation: nuevo-lavado-horizontal 1.2s ease-in-out infinite;
+}
+
+.animate-burbuja {
+  animation: burbuja-vertical 0.8s ease-in-out 3;
+}
+===== FIN ARCHIVO: src/frontend/src/index.css =====
+
+===== INICIO ARCHIVO: src/frontend/src/main.jsx =====
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
+===== FIN ARCHIVO: src/frontend/src/main.jsx =====
+

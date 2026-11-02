@@ -13,6 +13,7 @@ preservando la relación `Lavado -> Vehiculo -> Cliente`.
 de `EstadoLavado`), `utileria` (código de `Utileria`) y `login`, con `detallesLavado`
 opcional, y responder `201` con el lavado creado. El backend SHALL establecer
 `fechaHoraLavado` y `fechaHoraLavadoTerminado` con la hora local, sin tomarlas del cuerpo.
+Si el vehículo ya tiene un lavado activo, SHALL responder `409` sin crear el lavado.
 
 #### Scenario: Creación exitosa
 
@@ -43,6 +44,11 @@ opcional, y responder `201` con el lavado creado. El backend SHALL establecer
 
 - **WHEN** se crea un lavado
 - **THEN** `fechaHoraLavado` y `fechaHoraLavadoTerminado` quedan con la hora local del servidor y no se toman de la solicitud
+
+#### Scenario: Vehículo con lavado activo
+
+- **WHEN** se envía un lavado con un `vehi` que ya tiene un lavado en estado `En Espera`, `Lavando` o `Terminado`
+- **THEN** la respuesta es `409` y no se crea un segundo lavado activo para ese vehículo
 
 ### Requirement: Listar lavados
 
@@ -90,7 +96,9 @@ existe y `404` si no.
 `PUT /api/lavados/:id` SHALL actualizar `vehi`, `categoriaLavado`, `estado`, `utileria` y
 `detallesLavado`, con `200` si existe y `404` si no. Si el `estado` cambia, SHALL
 actualizar `fechaHoraLavadoTerminado` con la hora local. `fechaHoraLavado` NO SHALL
-modificarse y ninguna de las dos marcas SHALL aceptarse del cuerpo.
+modificarse y ninguna de las dos marcas SHALL aceptarse del cuerpo. Si la actualización deja el
+lavado activo (`En Espera`, `Lavando` o `Terminado`) sobre un vehículo con otro lavado activo,
+SHALL responder `409` sin modificar.
 
 #### Scenario: Actualización exitosa
 
@@ -116,6 +124,88 @@ modificarse y ninguna de las dos marcas SHALL aceptarse del cuerpo.
 
 - **WHEN** se actualiza un lavado sin cambiar el `estado`
 - **THEN** `fechaHoraLavadoTerminado` conserva su valor anterior
+
+#### Scenario: Conflicto de lavado activo al actualizar
+
+- **WHEN** se actualiza un lavado para que quede en estado `En Espera`, `Lavando` o `Terminado` sobre un vehículo que ya tiene otro lavado activo
+- **THEN** la respuesta es `409` y el lavado no se modifica
+
+#### Scenario: Actualización sobre el mismo vehículo
+
+- **WHEN** se cambia el estado de un lavado activo sin cambiar de vehículo y no existe otro lavado activo en ese vehículo
+- **THEN** la respuesta es `200` y no se considera un conflicto consigo mismo
+
+### Requirement: Estado inicial del lavado
+
+Al crear un lavado, el backend SHALL aceptar solo los estados `En Espera`, `Lavando` o
+`Terminado`; con `Entregado` u otro estado SHALL responder `400` sin crear el lavado.
+
+#### Scenario: Alta en un estado permitido
+
+- **WHEN** se crea un lavado con estado `En Espera`, `Lavando` o `Terminado`
+- **THEN** la respuesta es `201` y el lavado queda creado con ese estado
+
+#### Scenario: Alta en Entregado
+
+- **WHEN** se crea un lavado con estado `Entregado`
+- **THEN** la respuesta es `400` y no se crea el lavado
+
+### Requirement: Login del lavado desde la sesión
+
+`POST /api/lavados` SHALL asignar `login` con el `codigoLogin` de la sesión autenticada y SHALL
+ignorar cualquier `login` enviado en el cuerpo.
+
+#### Scenario: Login de la propia sesión
+
+- **WHEN** se crea un lavado sin `login` en el cuerpo
+- **THEN** el lavado queda asociado al `codigoLogin` de la sesión autenticada
+
+#### Scenario: Login de otra sesión
+
+- **WHEN** se crea un lavado enviando en el cuerpo el `login` de otra sesión
+- **THEN** ese valor se ignora y el lavado queda asociado al `codigoLogin` de la sesión autenticada
+
+### Requirement: Transiciones de estado permitidas
+
+El backend SHALL permitir solo las transiciones `En Espera → Lavando`, `Lavando → En Espera`,
+`Lavando → Terminado`, `Terminado → Lavando` y `Terminado → Entregado`; `Entregado` es
+terminal y el mismo estado no es una transición. Cualquier otra transición SHALL responder
+`409` sin modificar el lavado.
+
+#### Scenario: Avance permitido
+
+- **WHEN** se actualiza un lavado de `En Espera` a `Lavando`, de `Lavando` a `Terminado` o de `Terminado` a `Entregado`
+- **THEN** la respuesta es `200` y el estado se actualiza
+
+#### Scenario: Retroceso de un paso
+
+- **WHEN** se actualiza un lavado de `Lavando` a `En Espera` o de `Terminado` a `Lavando`
+- **THEN** la respuesta es `200` y el estado se actualiza
+
+#### Scenario: Transición no permitida
+
+- **WHEN** se intenta una transición distinta de las permitidas, como `En Espera` a `Terminado`, `En Espera` a `Entregado` o `Entregado` a `Terminado`
+- **THEN** la respuesta es `409` y el lavado no se modifica
+
+#### Scenario: Mismo estado
+
+- **WHEN** se actualiza un lavado enviando su mismo estado
+- **THEN** la respuesta es `200` y no se considera una transición
+
+#### Scenario: Entregado es terminal
+
+- **WHEN** se intenta actualizar un lavado en estado `Entregado` hacia `Terminado` o cualquier otro estado
+- **THEN** la respuesta es `409` y el lavado no se modifica
+
+### Requirement: Login no modificable al actualizar
+
+`PUT /api/lavados/:id` SHALL ignorar el campo `login` del cuerpo y conservar el login original
+del lavado.
+
+#### Scenario: Login ignorado al actualizar
+
+- **WHEN** se actualiza un lavado enviando un `login` distinto en el cuerpo
+- **THEN** la respuesta es `200` y el lavado conserva su login original
 
 ### Requirement: Eliminar lavado no permitido
 

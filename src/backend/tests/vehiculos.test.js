@@ -1,6 +1,8 @@
 const app = require('../app');
 const {
   sequelize,
+  Persona,
+  Cliente,
   Vehiculo,
   Lavado,
   EstadoLavado,
@@ -314,5 +316,121 @@ describe('CRUD de vehículos y catálogos', () => {
 
     expect(res.status).toBe(201);
     await ModeloVehiculo.destroy({ where: { codigoModeloVehi: res.body.data.codigoModeloVehi } });
+  });
+
+  let patenteSeq = Math.floor(Math.random() * 800) + 100;
+
+  function patenteUnica() {
+    patenteSeq = patenteSeq >= 999 ? 100 : patenteSeq + 1;
+    return `AB${patenteSeq}CD`;
+  }
+
+  function dniUnico() {
+    return Number(`9${String(Date.now()).slice(-8)}${Math.floor(Math.random() * 90 + 10)}`);
+  }
+
+  function patenteCanonica(patente) {
+    return `${patente.slice(0, 2)}-${patente.slice(2, 5)}-${patente.slice(5)}`;
+  }
+
+  async function crearVehiculoConPatente(patente, cliente = ids.clienteId) {
+    const res = await agent.post('/api/vehiculos').send({
+      patenteVehi: patente,
+      estadoVehi: true,
+      cliente,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    if (res.status === 201) {
+      createdVehiculos.push(res.body.data.codigoVehi);
+    }
+    return res;
+  }
+
+  test('el alta normaliza la patente', async () => {
+    const patente = patenteUnica();
+    const res = await crearVehiculoConPatente(patente.toLowerCase());
+
+    expect(res.status).toBe(201);
+    const enDb = await Vehiculo.findByPk(res.body.data.codigoVehi);
+    expect(enDb.patenteVehi).toBe(patenteCanonica(patente));
+  });
+
+  test('dos vehiculos con la misma patente normalizada responde 409', async () => {
+    const patente = patenteUnica();
+    const primera = await crearVehiculoConPatente(patente);
+    const segunda = await crearVehiculoConPatente(
+      `${patente.slice(0, 2).toLowerCase()}-${patente.slice(2, 5)}-${patente.slice(5).toLowerCase()}`,
+    );
+
+    expect(primera.status).toBe(201);
+    expect(segunda.status).toBe(409);
+    expect(segunda.body.error.message).toBe('La patente ya esta registrada.');
+    expect(await Vehiculo.count({ where: { patenteVehi: patenteCanonica(patente) } })).toBe(1);
+  });
+
+  test('el alta con la patente de un vehiculo dado de baja lo reactiva', async () => {
+    const patente = patenteUnica();
+    const primera = await crearVehiculoConPatente(patente);
+    const id = primera.body.data.codigoVehi;
+
+    await Vehiculo.update({ estadoVehi: false }, { where: { codigoVehi: id } });
+
+    const segunda = await crearVehiculoConPatente(patente);
+
+    expect(segunda.status).toBe(201);
+    expect(segunda.body.data.codigoVehi).toBe(id);
+    const enDb = await Vehiculo.findByPk(id);
+    expect(Boolean(enDb.estadoVehi)).toBe(true);
+  });
+
+  test('la reactivacion puede asignar el vehiculo a un cliente distinto', async () => {
+    const patente = patenteUnica();
+    const primera = await crearVehiculoConPatente(patente);
+    const vehiculoId = primera.body.data.codigoVehi;
+
+    await Vehiculo.update({ estadoVehi: false }, { where: { codigoVehi: vehiculoId } });
+
+    const cliente = await agent
+      .post('/api/clientes')
+      .send({ nombre: 'Otro', apellido: 'Cliente', dni: dniUnico() });
+    const otroClienteId = cliente.body.data.codigoPersona;
+
+    const segunda = await crearVehiculoConPatente(patente.toLowerCase(), otroClienteId);
+
+    expect(segunda.status).toBe(201);
+    expect(segunda.body.data.codigoVehi).toBe(vehiculoId);
+    const enDb = await Vehiculo.findByPk(vehiculoId);
+    expect(String(enDb.cliente)).toBe(String(otroClienteId));
+
+    await Lavado.destroy({ where: { vehi: vehiculoId } });
+    await Vehiculo.destroy({ where: { codigoVehi: vehiculoId } });
+    await Cliente.destroy({ where: { codigoPersona: otroClienteId } });
+    await Persona.destroy({ where: { codigoPersona: otroClienteId } });
+  });
+
+  test('PUT con la patente de otro vehiculo responde 409', async () => {
+    const patenteA = patenteUnica();
+    const patenteB = patenteUnica();
+    const a = await crearVehiculoConPatente(patenteA);
+    await crearVehiculoConPatente(patenteB);
+
+    const res = await agent
+      .put(`/api/vehiculos/${a.body.data.codigoVehi}`)
+      .send({ patenteVehi: patenteB });
+
+    expect(res.status).toBe(409);
+    const enDb = await Vehiculo.findByPk(a.body.data.codigoVehi);
+    expect(enDb.patenteVehi).toBe(patenteCanonica(patenteA));
+  });
+
+  test('PUT con su misma patente responde 200', async () => {
+    const patente = patenteUnica();
+    const creado = await crearVehiculoConPatente(patente);
+
+    const res = await agent
+      .put(`/api/vehiculos/${creado.body.data.codigoVehi}`)
+      .send({ patenteVehi: patente });
+
+    expect(res.status).toBe(200);
   });
 });

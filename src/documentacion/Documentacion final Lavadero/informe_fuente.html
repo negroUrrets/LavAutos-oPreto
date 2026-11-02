@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LavAutos oPreto - Informe de entrega final</title>
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.25; }
+  h1 { font-size: 15pt; color: #1f2a66; margin: 12pt 0 6pt; }
+  h2 { font-size: 12.5pt; color: #1f2a66; margin: 10pt 0 4pt; }
+  h3 { font-size: 11.5pt; color: #2637a2; margin: 12pt 0 4pt; }
+  p { margin: 0 0 4pt; text-align: justify; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 8.5pt; }
+  th, td { border: 1px solid #888; padding: 2pt 3pt; vertical-align: top; }
+  th { background: #e6e6e6; text-align: left; }
+  ul, ol { margin: 0 0 8pt 16pt; }
+  li { margin-bottom: 3pt; }
+  .cover { text-align: center; margin-top: 120pt; }
+  .cover h1 { font-size: 26pt; margin-bottom: 6pt; }
+  .cover .sub { font-size: 14pt; color: #333; margin-bottom: 60pt; }
+  .cover table { width: 70%; margin: 0 auto; font-size: 11pt; }
+  .cover td { border: none; padding: 3pt 6pt; }
+  .cover td.label { text-align: right; font-weight: bold; width: 35%; }
+  .cover td.value { text-align: left; }
+  .page-break { page-break-before: always; }
+  .muted { color: #555; }
+  .small { font-size: 9pt; }
+  .diagram { font-family: Consolas, monospace; font-size: 9pt; background: #f4f4f4; border: 1px solid #999; padding: 8pt; white-space: pre; }
+  .pending { background: #fff3cd; }
+  .tag { font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>LavAutos oPreto</h1>
+  <div class="sub">Sistema de gestión de lavadero de vehículos<br>Informe de entrega final</div>
+  <table>
+    <tr><td class="label">Materia:</td><td class="value">Taller de Desarrollo de Aplicaciones — IUA</td></tr>
+    <tr><td class="label">Docente:</td><td class="value">Ing. Gustavo Marcelo Macarone</td></tr>
+    <tr><td class="label">Ciclo lectivo:</td><td class="value">2026</td></tr>
+    <tr><td class="label">Equipo:</td><td class="value">[EquipoXX]</td></tr>
+    <tr><td class="label">Integrantes:</td><td class="value">[Integrante 1], [Integrante 2]</td></tr>
+    <tr><td class="label">Comisión:</td><td class="value">[Comisión]</td></tr>
+    <tr><td class="label">Fecha de entrega:</td><td class="value">06/11/2026</td></tr>
+    <tr><td class="label">Versión:</td><td class="value">entrega-final</td></tr>
+  </table>
+  <p class="small muted" style="margin-top:60pt">Los datos entre corchetes se completan antes de la entrega.<br>
+  Repositorio Git: no se incluye por decisión del equipo.</p>
+</div>
+
+<div class="page-break"></div>
+<h1>Índice</h1>
+<ol>
+  <li>Identificación</li>
+  <li>Problema y alcance</li>
+  <li>Requerimientos</li>
+  <li>Análisis</li>
+  <li>Diseño</li>
+  <li>Implementación</li>
+  <li>Pruebas y trazabilidad</li>
+  <li>Cierre, aportes y fuentes</li>
+</ol>
+<p class="small muted">Anexo: lista de control de la entrega.</p>
+
+<h1>1. Identificación</h1>
+<table>
+  <tr><th>Campo</th><th>Valor</th></tr>
+  <tr><td>Nombre del proyecto</td><td>LavAutos oPreto — Sistema de gestión de lavadero de vehículos</td></tr>
+  <tr><td>Equipo</td><td>[EquipoXX]</td></tr>
+  <tr><td>Integrantes</td><td>[Integrante 1], [Integrante 2]</td></tr>
+  <tr><td>Materia</td><td>Taller de Desarrollo de Aplicaciones — IUA</td></tr>
+  <tr><td>Docente</td><td>Ing. Gustavo Marcelo Macarone</td></tr>
+  <tr><td>Comisión</td><td>[Comisión]</td></tr>
+  <tr><td>Ciclo lectivo</td><td>2026</td></tr>
+  <tr><td>Fecha de entrega</td><td>06/11/2026</td></tr>
+  <tr><td>Repositorio / commit</td><td>No incluido (decisión del equipo)</td></tr>
+</table>
+
+<h1>2. Problema y alcance</h1>
+<h2>2.1 Problema</h2>
+<p>Un lavadero de vehículos necesita registrar a sus clientes, los vehículos de cada cliente y
+los lavados realizados, y conocer en todo momento en qué estado está cada lavado. Sin un
+sistema, esa información se dispersa en planillas o papeles, se pierden los vínculos entre
+cliente, vehículo y lavado, y no hay control sobre qué vehículos están en proceso ni sobre la
+evolución de los trabajos.</p>
+<h2>2.2 Usuarios y objetivo</h2>
+<p>El usuario es el administrador o empleado del lavadero, que inicia sesión con una cuenta
+predeterminada. El objetivo es centralizar la gestión de clientes, vehículos y lavados, con
+validaciones, estados controlados y consultas de seguimiento.</p>
+<h2>2.3 Funcionalidades incluidas</h2>
+<ul>
+  <li>Inicio y cierre de sesión con una cuenta administradora predeterminada.</li>
+  <li>Gestión de clientes: alta, búsqueda, consulta, edición y baja (física o lógica).</li>
+  <li>Gestión de vehículos: alta, búsqueda, consulta, edición y baja, con catálogos en cascada.</li>
+  <li>Gestión de lavados: registro, listado por estado, avance de estado, edición y detalle.</li>
+  <li>Dashboard de consultas: lavados entregados por rango de fechas y clientes que no vuelven
+      desde una fecha.</li>
+  <li>Bloqueo de edición y baja de clientes o vehículos con lavados activos.</li>
+  <li>Script de base de datos con esquema y datos iniciales, y seed de catálogos al iniciar.</li>
+</ul>
+<h2>2.4 Fuera de alcance</h2>
+<ul>
+  <li>Gestión de usuarios y auditoría funcional de operaciones.</li>
+  <li>Stock y pagos: el <span class="tag">README</span> los menciona como idea, pero no están
+      implementados; se declaran fuera de alcance.</li>
+  <li>Paginación de listados, exportaciones y reportes gráficos.</li>
+  <li>Despliegue en Internet y aplicación móvil.</li>
+</ul>
+
+<h1>3. Requerimientos</h1>
+<h2>3.1 Requisitos funcionales</h2>
+<table>
+  <tr><th>ID</th><th>Función</th><th>Criterio de aceptación</th></tr>
+  <tr><td>RF-01</td><td>Iniciar sesión</td><td>Con credenciales válidas se crea la sesión y se responde 200; con credenciales inválidas se responde 401 con mensaje genérico y no se crea sesión.</td></tr>
+  <tr><td>RF-02</td><td>Cerrar sesión</td><td>Al confirmar el cierre se destruye la sesión del servidor y se redirige al login; sin sesión, los endpoints protegidos responden 401.</td></tr>
+  <tr><td>RF-03</td><td>Proteger endpoints y páginas</td><td>Toda ruta `/api` salvo `/api/auth/*` exige sesión; una página sin sesión redirige al login.</td></tr>
+  <tr><td>RF-04</td><td>Cuenta administradora predeterminada</td><td>Al iniciar el backend, si no existe la cuenta `admin` se crea con contraseña hasheada; si existe, no se duplica.</td></tr>
+  <tr><td>RF-05</td><td>Listar y buscar clientes</td><td>Solo se listan clientes activos; la búsqueda por nombre, apellido o DNI devuelve coincidencias y una lista vacía si no hay.</td></tr>
+  <tr><td>RF-06</td><td>Registrar cliente con vehículo</td><td>Con datos válidos se crean persona, cliente y vehículo; faltantes responden 400; un DNI duplicado se rechaza.</td></tr>
+  <tr><td>RF-07</td><td>Consultar cliente y sus vehículos</td><td>La página muestra los datos del cliente y la lista de sus vehículos; un cliente inexistente responde 404.</td></tr>
+  <tr><td>RF-08</td><td>Editar cliente</td><td>Se actualizan los datos personales y el estado; un DNI duplicado se rechaza; un cliente inexistente responde 404.</td></tr>
+  <tr><td>RF-09</td><td>Eliminar cliente</td><td>Sin lavados se elimina físicamente; con lavados no activos se aplica baja lógica (`estadoCliente = 0` y vehículos con `estadoVehi = 0`).</td></tr>
+  <tr><td>RF-10</td><td>Bloquear cliente con lavado activo</td><td>Si algún vehículo del cliente tiene un lavado en `En Espera`, `Lavando` o `Terminado`, `PUT` y `DELETE` responden 409 sin modificar datos.</td></tr>
+  <tr><td>RF-11</td><td>Dashboard: clientes que no vuelven</td><td>Con una fecha elegida se listan los clientes activos sin lavados posteriores a esa fecha.</td></tr>
+  <tr><td>RF-12</td><td>Listar y buscar vehículos</td><td>Se listan vehículos activos y se busca por modelo o patente, con estado sin resultados.</td></tr>
+  <tr><td>RF-13</td><td>Consultar vehículo y su cliente</td><td>La página muestra solo el vehículo encontrado con los datos de su cliente; un id inexistente responde 404.</td></tr>
+  <tr><td>RF-14</td><td>Registrar vehículo</td><td>Con datos válidos se crea el vehículo; faltantes responden 400; una patente duplicada se rechaza.</td></tr>
+  <tr><td>RF-15</td><td>Editar vehículo</td><td>Se actualizan patente, estado, cliente y modelo; una patente duplicada se rechaza.</td></tr>
+  <tr><td>RF-16</td><td>Eliminar vehículo</td><td>Sin lavados se elimina físicamente; con lavados no activos se aplica baja lógica (`estadoVehi = 0`).</td></tr>
+  <tr><td>RF-17</td><td>Bloquear vehículo con lavado activo</td><td>Si el vehículo tiene un lavado en `En Espera`, `Lavando` o `Terminado`, `PUT` y `DELETE` responden 409 sin modificarlo.</td></tr>
+  <tr><td>RF-18</td><td>Catálogos de vehículo en cascada</td><td>Al elegir categoría se cargan sus marcas y al elegir marca sus modelos; los formularios exigen la selección completa.</td></tr>
+  <tr><td>RF-19</td><td>Registrar lavado</td><td>Con vehículo, categoría, estado, al menos una utilería y login de sesión se crea el lavado y se responde 201.</td></tr>
+  <tr><td>RF-20</td><td>Listar lavados por secciones</td><td>La página agrupa `En Espera`, `Lavando` y `Terminado` en secciones colapsables y no muestra `Entregado`.</td></tr>
+  <tr><td>RF-21</td><td>Avanzar estado del lavado</td><td>`Lavar` pasa a `Lavando`, `Completado` a `Terminado` y `Entregar` a `Entregado`, con popup y recarga de la lista.</td></tr>
+  <tr><td>RF-22</td><td>Editar lavado activo</td><td>Se precargan categoría, estado, detalles y utilerías; `Registrar` actualiza y `Cancelar` no guarda.</td></tr>
+  <tr><td>RF-23</td><td>Ver detalle del lavado</td><td>`+info` muestra patente, categoría, modelo, marca y datos del cliente, y `Aceptar` cierra la ventana.</td></tr>
+  <tr><td>RF-24</td><td>Actualizar utilerías</td><td>Tildar o destildar una utilería actualiza `estadoUtileria` en el catálogo mediante `PUT /api/utilerias/:id`.</td></tr>
+  <tr><td>RF-25</td><td>Dashboard: lavados entregados por rango</td><td>Con `Desde` y `Hasta` se listan solo lavados `Entregado` con `fechaHoraLavadoTerminado` dentro del rango.</td></tr>
+  <tr><td>RF-26</td><td>Bloquear LAVAR con lavado activo</td><td>Si el vehículo tiene un lavado activo, `LAVAR` muestra un aviso y no navega al alta de lavado.</td></tr>
+  <tr><td>RF-27</td><td>Marcas de tiempo del lavado</td><td>El backend genera `fechaHoraLavado` y `fechaHoraLavadoTerminado`; al cambiar el estado actualiza la segunda y conserva la primera.</td></tr>
+  <tr><td>RF-28</td><td>Impedir eliminar lavados</td><td>`DELETE /api/lavados/:id` responde 405 y el lavado permanece almacenado.</td></tr>
+  <tr><td>RF-29</td><td>Home con accesos y fecha/hora</td><td>El home muestra los cuatro accesos y la fecha y hora reales de Buenos Aires.</td></tr>
+  <tr><td>RF-30</td><td>Navegación del home</td><td>`CLIENTES`, `VEHICULOS`, `LAVADOS` y `DASHBOARD` navegan a sus páginas.</td></tr>
+  <tr><td>RF-31</td><td>Script de base de datos</td><td>El script crea la base, las tablas, claves y relaciones e inserta los datos iniciales de forma idempotente.</td></tr>
+  <tr><td>RF-32</td><td>Seed de catálogos al iniciar</td><td>El backend garantiza utilerías, categorías y estados de lavado sin duplicar los existentes.</td></tr>
+  <tr><td>RF-33</td><td>Dashboard: modos y registros</td><td>Los registros inician deshabilitados en gris; el botón seleccionado queda verde y habilita su registro.</td></tr>
+</table>
+
+<h2>3.2 Historias de usuario</h2>
+<table>
+  <tr><th>ID</th><th>Historia</th><th>RF</th></tr>
+  <tr><td>HU-01</td><td>Como empleado, quiero iniciar y cerrar sesión para proteger la información del lavadero.</td><td>RF-01, RF-02, RF-03, RF-04</td></tr>
+  <tr><td>HU-02</td><td>Como empleado, quiero buscar clientes activos para encontrarlos rápido.</td><td>RF-05</td></tr>
+  <tr><td>HU-03</td><td>Como empleado, quiero registrar un cliente con su vehículo para comenzar a operar.</td><td>RF-06, RF-18</td></tr>
+  <tr><td>HU-04</td><td>Como empleado, quiero consultar y editar los datos de un cliente y sus vehículos.</td><td>RF-07, RF-08, RF-13, RF-15</td></tr>
+  <tr><td>HU-05</td><td>Como empleado, quiero dar de baja clientes y vehículos sin perder el historial de lavados.</td><td>RF-09, RF-10, RF-16, RF-17</td></tr>
+  <tr><td>HU-06</td><td>Como empleado, quiero registrar un lavado con su categoría, utilería y estado.</td><td>RF-19, RF-24, RF-27</td></tr>
+  <tr><td>HU-07</td><td>Como empleado, quiero seguir los lavados por estado y avanzarlos hasta la entrega.</td><td>RF-20, RF-21, RF-23, RF-26, RF-28</td></tr>
+  <tr><td>HU-08</td><td>Como empleado, quiero corregir los datos de un lavado activo.</td><td>RF-22</td></tr>
+  <tr><td>HU-09</td><td>Como encargado, quiero consultar lavados entregados por período y clientes que no vuelven.</td><td>RF-11, RF-25, RF-33</td></tr>
+  <tr><td>HU-10</td><td>Como responsable técnico, quiero que la base se cree con datos iniciales y catálogos listos.</td><td>RF-31, RF-32</td></tr>
+  <tr><td>HU-11</td><td>Como usuario, quiero una pantalla de inicio con accesos y la fecha y hora actuales.</td><td>RF-29, RF-30</td></tr>
+</table>
+
+<h2>3.3 Requisitos no funcionales</h2>
+<table>
+  <tr><th>ID</th><th>Requisito</th><th>Verificación</th></tr>
+  <tr><td>RNF-01</td><td>Las contraseñas se guardan con hash scrypt y sal aleatoria; nunca en texto plano.</td><td>`src/backend/utils/password.js`; prueba `tests/password.test.js`.</td></tr>
+  <tr><td>RNF-02</td><td>La sesión usa cookie `HttpOnly` y `SameSite`, con `Secure` configurable por entorno.</td><td>`src/backend/app.js`; pruebas de `tests/auth.test.js`.</td></tr>
+  <tr><td>RNF-03</td><td>La base mantiene claves primarias y foráneas y la integridad referencial.</td><td>Script SQL; `tests/models.test.js`.</td></tr>
+  <tr><td>RNF-04</td><td>Las respuestas JSON son consistentes y usan códigos HTTP adecuados.</td><td>`tests/app.test.js` y pruebas de integración.</td></tr>
+  <tr><td>RNF-05</td><td>Los errores se manejan de forma centralizada sin exponer trazas ni detalles internos.</td><td>`src/backend/middlewares/errorHandler.js`; `tests/app.test.js`.</td></tr>
+  <tr><td>RNF-06</td><td>El proyecto es reproducible: versiones declaradas, configuración de ejemplo y datos iniciales.</td><td>`package.json`, `src/backend/.env.example`, script SQL y seed.</td></tr>
+  <tr><td>RNF-07</td><td>Las validaciones del backend no dependen de las del frontend.</td><td>`src/backend/utils/validators.js`; pruebas de clientes y vehículos.</td></tr>
+  <tr><td>RNF-08</td><td>No se versionan secretos: `.env` está ignorado y el ejemplo usa valores ficticios.</td><td>Revisión de `.gitignore` y `.env.example`.</td></tr>
+</table>
+
+<h1>4. Análisis</h1>
+<h2>4.1 Backlog y tareas</h2>
+<table>
+  <tr><th>Épica</th><th>Tareas principales</th><th>Estado</th><th>Responsable</th></tr>
+  <tr><td>Base y autenticación</td><td>Esquema SQL, modelos Sequelize, login/logout, sesión, cuenta admin, seed de catálogos</td><td>Completa</td><td>Equipo</td></tr>
+  <tr><td>Clientes</td><td>CRUD, búsqueda, validaciones, páginas de alta/edición/información, baja lógica</td><td>Completa</td><td>Equipo</td></tr>
+  <tr><td>Vehículos</td><td>CRUD, catálogos en cascada, páginas de alta/edición/información, baja lógica</td><td>Completa</td><td>Equipo</td></tr>
+  <tr><td>Lavados</td><td>Registro, listado por estado, avance, edición, detalle, utilerías, marcas de tiempo</td><td>Completa</td><td>Equipo</td></tr>
+  <tr><td>Dashboard</td><td>Filtros por fecha, consultas de lavados entregados y clientes que no vuelven, avisos</td><td>Completa</td><td>Equipo</td></tr>
+  <tr><td>Validaciones de integridad</td><td>Bloqueo de edición/baja con lavados activos</td><td>Completa</td><td>Equipo</td></tr>
+  <tr><td>Documentación</td><td>Informe, código TXT y verificación de entrega</td><td>Completa</td><td>Equipo</td></tr>
+</table>
+
+<h2>4.2 Reglas de negocio</h2>
+<ol>
+  <li>El cliente de un lavado se obtiene por `Lavado → Vehículo → Cliente`; no existe una FK directa de lavado a cliente.</li>
+  <li>Un vehículo no puede tener más de un lavado en estado activo (`En Espera`, `Lavando` o `Terminado`); el botón `LAVAR` se bloquea en ese caso.</li>
+  <li>Estados del lavado: `En Espera → Lavando → Terminado → Entregado`. Los entregados no se muestran en el listado.</li>
+  <li>No se puede editar ni dar de baja un cliente o vehículo con un lavado activo: el backend responde 409.</li>
+  <li>Si hay lavados (no activos), la baja es lógica y los lavados se conservan; sin lavados, la baja es física.</li>
+  <li>Eliminar un lavado no está permitido: el backend responde 405.</li>
+  <li>Las utilerías se actualizan en el catálogo y el lavado guarda la primera utilería tildada.</li>
+  <li>Las fechas del lavado las genera el backend; al cambiar el estado se actualiza `fechaHoraLavadoTerminado`.</li>
+  <li>Dashboard: los lavados se filtran por `fechaHoraLavadoTerminado`; los clientes que no vuelven, por `fechaHoraLavado`.</li>
+</ol>
+
+<h2>4.3 Riesgos y tratamiento</h2>
+<table>
+  <tr><th>Riesgo</th><th>Impacto</th><th>Tratamiento</th></tr>
+  <tr><td>Base de datos no disponible</td><td>El backend no inicia y las pruebas de integración fallan</td><td>Verificación de conexión al arrancar, mensaje claro y documentación de requisitos</td></tr>
+  <tr><td>Secretos en el repositorio</td><td>Exposición de credenciales</td><td>`.env` ignorado, `.env.example` ficticio y verificación del TXT</td></tr>
+  <tr><td>Duplicados por reejecución del script</td><td>Catálogos inconsistentes</td><td>Inserciones con `IF NOT EXISTS` y seed idempotente</td></tr>
+  <tr><td>Zona horaria del servidor</td><td>Fechas de filtros corridas</td><td>Fechas locales y documentación del criterio</td></tr>
+  <tr><td>Datos reales en la entrega</td><td>Incumplimiento de la guía</td><td>Solo datos ficticios y sin `.env` en el TXT</td></tr>
+  <tr><td>Capturas pendientes</td><td>Menor evidencia visual</td><td>Se declara y se respalda con pruebas y código</td></tr>
+</table>
+
+<h2>4.4 Maquetas y diferencias con la versión final</h2>
+<table>
+  <tr><th>Maqueta (ruta)</th><th>Diferencia con la versión final</th></tr>
+  <tr><td>`src/documentacion/Prototipado/usuario/iniciar sesion.jpg`</td><td>Se mantiene el diseño; el error usa un mensaje genérico y el popup de éxito conserva el estilo.</td></tr>
+  <tr><td>`src/documentacion/Prototipado/home/home.jpg`</td><td>El botón `DASHBOARD` ahora navega; el resto de los accesos se mantiene.</td></tr>
+  <tr><td>`src/documentacion/Prototipado/cliente/clientes.jpg` y `registrar_cliente.jpg`</td><td>Se agregaron máscaras y validaciones de DNI, celular, patente y e-mail.</td></tr>
+  <tr><td>`src/documentacion/Prototipado/lavado/listar_lavados_activos.jpg`</td><td>Las secciones son colapsables, `+info` abre una ventana y `Editar` navega al lavado.</td></tr>
+  <tr><td>`src/documentacion/Prototipado/lavado/Nuevo Lavado.jpg` y `Editar Lavado.jpg`</td><td>Se guarda una sola utilería por lavado (la primera tildada); el resto queda en el catálogo.</td></tr>
+  <tr><td>`src/documentacion/Prototipado/dashboard/dashboard .jpg`</td><td>Los filtros usan calendarios nativos, el estado se conserva en la URL y `+info` del cliente abre su página.</td></tr>
+</table>
+
+<h1>5. Diseño</h1>
+<h2>5.1 Arquitectura</h2>
+<pre class="diagram">
++---------------------------+        HTTP/JSON + cookie HttpOnly        +---------------------------+
+|  Navegador                |  -------------------------------------->  |  API REST Express (/api)  |
+|  React SPA (Vite)         |  <--------------------------------------  |  controllers / services   |
+|  pages, components,       |            respuestas {success,data}      |  middlewares, routes      |
+|  services (fetch)         |                                           +------------+--------------+
++---------------------------+                                                        |
+                                                                                     | Sequelize
+                                                                                     v
+                                                                        +---------------------------+
+                                                                        |  SQL Server               |
+                                                                        |  DataBaseLavadero         |
+                                                                        +---------------------------+
+</pre>
+<p>El navegador ejecuta una SPA de React que consume la API REST con `fetch` y cookie de sesión.
+La API expone rutas bajo `/api`, protege los recursos con el middleware de sesión, delega la
+lógica en servicios y accede a SQL Server mediante modelos Sequelize. La base concentra el
+esquema, las claves y los datos iniciales.</p>
+
+<h2>5.2 Módulos y responsabilidades</h2>
+<table>
+  <tr><th>Carpeta</th><th>Responsabilidad</th><th>Archivos clave</th></tr>
+  <tr><td>`src/frontend/src/pages`</td><td>Pantallas completas y navegación</td><td>`LoginPage.jsx`, `HomePage.jsx`, `ClientesPage.jsx`, `ClienteInfoPage.jsx`, `NuevoClientePage.jsx`, `EditarClientePage.jsx`, `VehiculosPage.jsx`, `VehiculoInfoPage.jsx`, `NuevoVehiculoPage.jsx`, `EditarVehiculoPage.jsx`, `LavadosPage.jsx`, `NuevoLavadoPage.jsx`, `EditarLavadoPage.jsx`, `DashboardPage.jsx`</td></tr>
+  <tr><td>`src/frontend/src/components`</td><td>Componentes reutilizables</td><td>`AppHeader.jsx`, `BrandHeader.jsx`, `ClienteVehiculoInfo.jsx`, `ConfirmPopup.jsx`, `Popup.jsx`, `LogoutPopup.jsx`, `DateTimePanel.jsx`, `LavadoInfoPopup.jsx`</td></tr>
+  <tr><td>`src/frontend/src/services`</td><td>Comunicación con la API</td><td>`authService.js`, `clientService.js`, `vehicleService.js`, `lavadoService.js`</td></tr>
+  <tr><td>`src/frontend/src/utils`</td><td>Validaciones y formato</td><td>`validators.js`, `formatDateTime.js`</td></tr>
+  <tr><td>`src/backend/routes`</td><td>Definición de rutas HTTP</td><td>`index.js`, `auth.js`, `clientes.js`, `vehiculos.js`, `lavados.js`, `utilerias.js`, `estadosLavado.js`</td></tr>
+  <tr><td>`src/backend/controllers`</td><td>Adaptación HTTP</td><td>`authController.js`, `crudController.js`</td></tr>
+  <tr><td>`src/backend/services`</td><td>Reglas de negocio</td><td>`authService.js`, `clienteService.js`, `vehiculoService.js`, `lavadoService.js`, `lavadoActivoService.js`, `catalogSeedService.js`, `adminService.js`</td></tr>
+  <tr><td>`src/backend/models`</td><td>Persistencia Sequelize</td><td>`index.js`, `Persona.js`, `Cliente.js`, `Vehiculo.js`, `Lavado.js`, `Usuario.js`, `Login.js`</td></tr>
+  <tr><td>`src/backend/middlewares`</td><td>Sesión y errores</td><td>`requireAuth.js`, `errorHandler.js`, `notFound.js`</td></tr>
+  <tr><td>`src/databaseLavadero/script db`</td><td>Esquema y datos iniciales</td><td>`DataBaseLavadero.sql`</td></tr>
+</table>
+
+<h2>5.3 Modelo de datos</h2>
+<table>
+  <tr><th>Tabla</th><th>Clave primaria</th><th>Claves foráneas / relaciones</th></tr>
+  <tr><td>Persona</td><td>codigoPersona</td><td>—</td></tr>
+  <tr><td>Cliente</td><td>codigoPersona</td><td>codigoPersona → Persona (TPT)</td></tr>
+  <tr><td>CategoriaVehiculo</td><td>codigoCategoriaVehi</td><td>—</td></tr>
+  <tr><td>MarcaVehiculo</td><td>codigoMarcaVehi</td><td>categoriaVehi → CategoriaVehiculo</td></tr>
+  <tr><td>ModeloVehiculo</td><td>codigoModeloVehi</td><td>marcaVehi → MarcaVehiculo</td></tr>
+  <tr><td>Vehiculo</td><td>codigoVehi</td><td>cliente → Cliente; modeloVehi → ModeloVehiculo</td></tr>
+  <tr><td>Usuario</td><td>codigoUsuario</td><td>—</td></tr>
+  <tr><td>Login</td><td>codigoLogin</td><td>usuario → Usuario</td></tr>
+  <tr><td>CategoriaLavado</td><td>codigoCategoriaLavado</td><td>—</td></tr>
+  <tr><td>EstadoLavado</td><td>codigoEstado</td><td>—</td></tr>
+  <tr><td>Utileria</td><td>codigoUtileria</td><td>—</td></tr>
+  <tr><td>Lavado</td><td>codigoLavado</td><td>vehi → Vehiculo; categoriaLavado → CategoriaLavado; login → Login; estado → EstadoLavado; utileria → Utileria</td></tr>
+</table>
+<p>El diagrama del esquema y el modelo de datos se encuentran en
+`src/documentacion/Esquema Base Datos/Esquema Base Datos.png` y
+`src/documentacion/Modelo Datos/Modelo de Datos.png`. La relación principal es
+`Lavado → Vehiculo → Cliente`, sin FK directa de Lavado a Cliente.</p>
+
+<h2>5.4 Tecnologías y versiones</h2>
+<table>
+  <tr><th>Componente</th><th>Tecnología / versión</th><th>Uso</th></tr>
+  <tr><td>Frontend</td><td>React 19, React DOM 19</td><td>Interfaz SPA</td></tr>
+  <tr><td>Build y estilos</td><td>Vite 6, Tailwind CSS 4</td><td>Desarrollo y estilos</td></tr>
+  <tr><td>Ruteo</td><td>React Router DOM 6.28</td><td>Navegación</td></tr>
+  <tr><td>Backend</td><td>Node.js 24.19, Express 4.21</td><td>API REST</td></tr>
+  <tr><td>Persistencia</td><td>Sequelize 6.37, tedious 16.7</td><td>Modelos y conexión SQL Server</td></tr>
+  <tr><td>Base de datos</td><td>Microsoft SQL Server</td><td>Almacenamiento</td></tr>
+  <tr><td>Pruebas backend</td><td>Jest 29, Supertest 7</td><td>Integración de la API</td></tr>
+  <tr><td>Pruebas frontend</td><td>Vitest 2.1, Testing Library, jsdom</td><td>Componentes y servicios</td></tr>
+  <tr><td>Calidad</td><td>ESLint 9, Prettier 3.4</td><td>Lint y formato</td></tr>
+</table>
+<p>Se eligió separar frontend y backend para que la interfaz no acceda a la base y las reglas
+queden en la API; Sequelize facilita el mapeo y las transacciones; SQL Server responde al
+requisito de la cátedra; la sesión con cookie `HttpOnly` evita guardar credenciales en el
+navegador; Tailwind acelera la construcción de la interfaz; las pruebas automatizadas permiten
+la trazabilidad exigida.</p>
+
+<h1>6. Implementación</h1>
+<h2>6.1 Árbol de carpetas</h2>
+<pre class="diagram">
+proyectoLavaderoAutos/
+├── README.md
+├── src/
+│   ├── backend/
+│   │   ├── app.js, server.js, package.json, .env.example
+│   │   ├── config/        (database.js, index.js)
+│   │   ├── controllers/   (authController.js, crudController.js)
+│   │   ├── middlewares/   (requireAuth.js, errorHandler.js, notFound.js)
+│   │   ├── models/        (Persona, Cliente, Vehiculo, Lavado, ...)
+│   │   ├── routes/        (auth, clientes, vehiculos, lavados, utilerias, ...)
+│   │   ├── services/      (auth, cliente, vehiculo, lavado, lavadoActivo, seed, admin)
+│   │   ├── scripts/       (seed.js)
+│   │   ├── tests/         (10 suites de Jest)
+│   │   └── utils/         (AppError, asyncHandler, password, validators)
+│   ├── frontend/
+│   │   ├── index.html, vite.config.js, package.json
+│   │   └── src/
+│   │       ├── pages/       (Login, Home, Clientes, Vehiculos, Lavados, Dashboard, ...)
+│   │       ├── components/  (AppHeader, Popup, ClienteVehiculoInfo, ...)
+│   │       ├── services/    (auth, client, vehicle, lavado)
+│   │       ├── utils/       (validators, formatDateTime)
+│   │       ├── assets/      (auto.png, burbujas.png, usuario.png)
+│   │       └── index.css
+│   ├── databaseLavadero/script db/DataBaseLavadero.sql
+│   └── documentacion/     (prototipos, diagramas, esquema, modelo)
+└── openspec/              (especificaciones y cambios aprobados)
+</pre>
+
+<h2>6.2 Tabla de funcionalidades</h2>
+<table>
+  <tr><th>Funcionalidad</th><th>Estado</th><th>Observación</th></tr>
+  <tr><td>Login y logout</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Cuenta administradora y seed de catálogos</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Clientes: alta, búsqueda, consulta, edición y baja</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Vehículos: alta, búsqueda, consulta, edición y baja</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Lavados: registro, listado, avance, edición y detalle</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Dashboard: consultas por fecha y avisos</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Bloqueo por lavado activo</td><td>Completa</td><td>—</td></tr>
+  <tr><td>Gestión de usuarios y auditoría</td><td>No implementada</td><td>Fuera de alcance aprobado</td></tr>
+  <tr><td>Stock y pagos</td><td>No implementada</td><td>Mencionados en el README como idea; fuera de alcance</td></tr>
+  <tr><td>Paginación, exportaciones y reportes gráficos</td><td>No implementada</td><td>Fuera de alcance</td></tr>
+</table>
+
+<h2>6.3 Requisitos previos</h2>
+<ul>
+  <li>Node.js 24.19 y npm 12 (probado con esas versiones).</li>
+  <li>Microsoft SQL Server accesible en `localhost,1433` (o la instancia configurada).</li>
+  <li>Permisos para crear la base `DataBaseLavadero` o una base ya creada.</li>
+  <li>Navegador actualizado; no se requiere conexión a Internet para ejecutar en local.</li>
+</ul>
+
+<h2>6.4 Instalación y ejecución</h2>
+<ol>
+  <li>Crear la base y el esquema: abrir `src/databaseLavadero/script db/DataBaseLavadero.sql` en SQL Server Management Studio (o `sqlcmd -S localhost,1433 -E -C -f 65001 -i "ruta\DataBaseLavadero.sql"`) y ejecutarlo. Crea la base, las tablas, claves, relaciones y los datos iniciales de forma idempotente.</li>
+  <li>Configurar el backend: copiar `src/backend/.env.example` a `src/backend/.env` y completar `DB_SERVER`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_AUTH_TYPE`, `DB_DOMAIN` y `SESSION_SECRET` con valores locales ficticios. No versionar `.env`.</li>
+  <li>Instalar dependencias del backend: `cd src/backend` y `npm install`.</li>
+  <li>Opcional: cargar catálogos con `npm run seed` (el backend también los garantiza al iniciar).</li>
+  <li>Iniciar el backend: `npm start` (o `npm run dev`). Inicio correcto: el mensaje `Backend escuchando en el puerto 3000`.</li>
+  <li>Instalar dependencias del frontend: `cd src/frontend` y `npm install`.</li>
+  <li>Iniciar el frontend: `npm run dev`. Inicio correcto: Vite informa `Local: http://localhost:5173/`.</li>
+  <li>Abrir `http://localhost:5173` en el navegador. La aplicación debe mostrar el login.</li>
+</ol>
+<p class="small muted">El frontend usa un proxy de Vite hacia `http://localhost:3000` para `/api`.</p>
+
+<h2>6.5 Cuenta de demostración</h2>
+<p>Usuario <span class="tag">admin</span> y contraseña <span class="tag">123456</span> (cuenta
+ficticia predeterminada, creada por el backend si no existe). En un entorno real debe cambiarse
+por variables de entorno y una contraseña segura.</p>
+
+<h2>6.6 Capturas de los recorridos principales</h2>
+<p class="pending">Las capturas definitivas las aporta el equipo. La tabla siguiente deja
+preparadas las figuras, con la acción, el resultado esperado y el RF asociado, para insertarlas
+antes de la entrega.</p>
+<table>
+  <tr><th>Figura</th><th>Acción</th><th>Resultado que muestra</th><th>RF</th><th>Estado</th></tr>
+  <tr><td>Figura 1</td><td>Abrir la aplicación e iniciar sesión con la cuenta ficticia</td><td>Login y llegada al home</td><td>RF-01, RF-29</td><td>Pendiente</td></tr>
+  <tr><td>Figura 2</td><td>Buscar un cliente y abrir su información</td><td>Resultados y card del cliente con sus vehículos</td><td>RF-05, RF-07</td><td>Pendiente</td></tr>
+  <tr><td>Figura 3</td><td>Registrar un cliente con su vehículo</td><td>Formulario con catálogos en cascada y confirmación</td><td>RF-06, RF-18</td><td>Pendiente</td></tr>
+  <tr><td>Figura 4</td><td>Editar un cliente</td><td>Datos precargados y guardado exitoso</td><td>RF-08</td><td>Pendiente</td></tr>
+  <tr><td>Figura 5</td><td>Intentar eliminar un cliente con lavado activo</td><td>Aviso de vehículo en estado de lavado</td><td>RF-10</td><td>Pendiente</td></tr>
+  <tr><td>Figura 6</td><td>Registrar un lavado desde un vehículo</td><td>Formulario y confirmación de registro</td><td>RF-19, RF-24</td><td>Pendiente</td></tr>
+  <tr><td>Figura 7</td><td>Avanzar un lavado por sus estados</td><td>Secciones y popups de avance</td><td>RF-20, RF-21</td><td>Pendiente</td></tr>
+  <tr><td>Figura 8</td><td>Abrir `+info` de un lavado</td><td>Ventana con datos del lavado y del cliente</td><td>RF-23</td><td>Pendiente</td></tr>
+  <tr><td>Figura 9</td><td>Consultar lavados entregados por rango</td><td>Registro habilitado y resultados</td><td>RF-25, RF-33</td><td>Pendiente</td></tr>
+  <tr><td>Figura 10</td><td>Consultar clientes que no vuelven desde una fecha</td><td>Resultados y navegación a la información del cliente</td><td>RF-11</td><td>Pendiente</td></tr>
+</table>
+
+<h2>6.7 Partes del archivo de código</h2>
+<p>El código se entrega en tres partes para mantener cada archivo por debajo de las 5000
+líneas, sin cortar ningún archivo entre partes:</p>
+<table>
+  <tr><th>Parte</th><th>Archivos</th><th>Contenido</th></tr>
+  <tr><td>EquipoXX_Codigo_01.txt</td><td>80</td><td>README, configuración de ejemplo, dependencias, configuración de frontend y backend, script SQL y código del backend</td></tr>
+  <tr><td>EquipoXX_Codigo_02.txt</td><td>22</td><td>Componentes y páginas del frontend</td></tr>
+  <tr><td>EquipoXX_Codigo_03.txt</td><td>29</td><td>Resto de las páginas, pruebas, servicios, utilidades y estilos del frontend</td></tr>
+</table>
+<p>Total: 131 archivos y aproximadamente 11.470 líneas. Se excluyeron `node_modules`,
+`dist`, `coverage`, `.git`, `.env`, imágenes, PDFs, DOCX, `package-lock.json`, `openspec/`,
+`.opencode/` y `.cursor/`.</p>
+
+<h1>7. Pruebas y trazabilidad</h1>
+<p>Entorno de ejecución: 2026-11-01, Node.js 24.19, SQL Server local, backend con Jest 29 y
+frontend con Vitest 2.1. Resultados globales: <span class="tag">backend 10 suites / 77 pruebas
+en verde</span> y <span class="tag">frontend 21 archivos / 194 pruebas en verde</span>. Las
+pruebas de integración del backend requieren SQL Server disponible.</p>
+
+<h2>7.1 Casos de prueba</h2>
+<table>
+  <tr><th>CP</th><th>RF</th><th>Precondiciones y datos</th><th>Pasos</th><th>Esperado</th><th>Obtenido</th><th>Estado</th></tr>
+  <tr><td>CP-01</td><td>RF-01</td><td>Cuenta admin ficticia; credenciales inválidas</td><td>Login válido e inválido en la API y en la UI</td><td>200 con sesión; 401 con mensaje genérico</td><td>Suites `auth.test.js` y `LoginPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-02</td><td>RF-02</td><td>Sesión iniciada</td><td>Cerrar sesión y consultar un endpoint protegido</td><td>Sesión destruida y 401 posterior</td><td>`auth.test.js` y `HomePage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-03</td><td>RF-03</td><td>Sin sesión</td><td>Llamar `/api/clientes` y abrir una página protegida</td><td>401 en la API y redirección al login</td><td>`app.test.js`, `auth.test.js`, `App.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-04</td><td>RF-04</td><td>Base sin usuario admin</td><td>Iniciar el backend dos veces</td><td>La cuenta se crea una sola vez</td><td>`adminBootstrap.test.js` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-05</td><td>RF-05</td><td>Clientes activos e inactivos</td><td>Listar, buscar por nombre/apellido/DNI y buscar sin coincidencias</td><td>Solo activos; coincidencias correctas; lista vacía</td><td>`clientes.test.js` y `ClientesPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-06</td><td>RF-06</td><td>Datos válidos, faltantes y DNI duplicado</td><td>Registrar cliente con vehículo</td><td>201; 400 por faltantes; rechazo de duplicado</td><td>`clientes.test.js` y `NuevoClientePage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-07</td><td>RF-07</td><td>Cliente con vehículos; id inexistente</td><td>Consultar información y vehículos</td><td>Datos y vehículos; 404 si no existe</td><td>`clientes.test.js` y `ClienteInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-08</td><td>RF-08</td><td>Cliente existente; DNI duplicado</td><td>Editar datos y guardar</td><td>200 con cambios; rechazo de duplicado</td><td>`clientes.test.js` y `EditarClientePage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-09</td><td>RF-09</td><td>Cliente sin lavados y con lavados entregados</td><td>Eliminar en ambos casos</td><td>Baja física y baja lógica respectivamente</td><td>`clientes.test.js` y `ClienteInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-10</td><td>RF-10</td><td>Cliente con vehículo en `En Espera`</td><td>Editar y eliminar el cliente</td><td>409 sin cambios; aviso en la UI</td><td>`clientes.test.js` y `ClienteInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-11</td><td>RF-11</td><td>Clientes con y sin lavados posteriores</td><td>Consultar con `sinLavadosDesde`</td><td>Incluye sin lavados posteriores; excluye con lavado posterior</td><td>`clientes.test.js` y `DashboardPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-12</td><td>RF-12</td><td>Vehículos activos</td><td>Listar y buscar por modelo o patente</td><td>Resultados correctos y estado sin resultados</td><td>`vehiculos.test.js` y `VehiculosPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-13</td><td>RF-13</td><td>Vehículo existente e inexistente</td><td>Consultar el vehículo y su cliente</td><td>Datos correctos; 404 si no existe</td><td>`vehiculos.test.js` y `VehiculoInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-14</td><td>RF-14</td><td>Datos válidos, faltantes y patente duplicada</td><td>Registrar vehículo</td><td>201; 400; rechazo de duplicado</td><td>`vehiculos.test.js` y `NuevoVehiculoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-15</td><td>RF-15</td><td>Vehículo existente; patente duplicada</td><td>Editar y guardar</td><td>200 con cambios; rechazo de duplicado</td><td>`vehiculos.test.js` y `EditarVehiculoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-16</td><td>RF-16</td><td>Vehículo sin lavados y con lavados entregados</td><td>Eliminar en ambos casos</td><td>Baja física y baja lógica respectivamente</td><td>`vehiculos.test.js` y `VehiculoInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-17</td><td>RF-17</td><td>Vehículo con lavado en `En Espera`</td><td>Editar y eliminar el vehículo</td><td>409 sin cambios; aviso en la UI</td><td>`vehiculos.test.js` y `VehiculoInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-18</td><td>RF-18</td><td>Catálogos cargados</td><td>Elegir categoría y marca en los formularios</td><td>Marcas y modelos filtrados en cascada</td><td>`vehiculos.test.js` y `NuevoVehiculoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-19</td><td>RF-19</td><td>Vehículo, categoría, estado y utilería</td><td>Registrar un lavado y validar faltantes</td><td>201 con datos; aviso si falta un campo</td><td>`lavados.test.js` y `NuevoLavadoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-20</td><td>RF-20</td><td>Lavados en los tres estados y uno entregado</td><td>Abrir la página de Lavados y contraer secciones</td><td>Agrupación correcta; entregado no visible</td><td>`LavadosPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-21</td><td>RF-21</td><td>Lavado en cada estado</td><td>Presionar `Lavar`, `Completado` y `Entregar`</td><td>Cambio de estado y recarga de la lista</td><td>`lavados.test.js` y `LavadosPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-22</td><td>RF-22</td><td>Lavado activo</td><td>Editar datos, registrar y cancelar</td><td>PUT con los cambios; cancelar no guarda</td><td>`lavados.test.js` y `EditarLavadoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-23</td><td>RF-23</td><td>Lavado con vehículo y cliente</td><td>Abrir `+info` y aceptar</td><td>Datos completos; la ventana se cierra</td><td>`LavadosPage.test.jsx` y `DashboardPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-24</td><td>RF-24</td><td>Utilería existente</td><td>Tildar y destildar una utilería</td><td>`estadoUtileria` actualizado</td><td>`utilerias.test.js` y `NuevoLavadoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-25</td><td>RF-25</td><td>Lavados entregados en distintas fechas</td><td>Consultar con `desde` y `hasta`</td><td>Solo entregados dentro del rango</td><td>`lavados.test.js` y `DashboardPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-26</td><td>RF-26</td><td>Vehículo con lavado activo</td><td>Presionar `LAVAR`</td><td>Aviso y sin navegación</td><td>`ClienteInfoPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-27</td><td>RF-27</td><td>Alta y cambio de estado de un lavado</td><td>Crear y actualizar el estado</td><td>Fechas generadas por el backend; terminado actualizado</td><td>`lavados.test.js` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-28</td><td>RF-28</td><td>Lavado existente</td><td>Enviar `DELETE`</td><td>405 y el lavado permanece</td><td>`lavados.test.js` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-29</td><td>RF-29</td><td>Sesión válida</td><td>Abrir el home</td><td>Cuatro accesos y fecha/hora de Buenos Aires</td><td>`HomePage.test.jsx` y `formatDateTime.test.js` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-30</td><td>RF-30</td><td>Sesión válida</td><td>Usar los cuatro accesos del home</td><td>Cada uno navega a su página</td><td>`HomePage.test.jsx` y `App.test.jsx` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-31</td><td>RF-31</td><td>Instancia SQL Server disponible</td><td>Ejecutar el script dos veces y consultar las tablas</td><td>Esquema y datos iniciales sin duplicados</td><td>Verificación manual con `sqlcmd` (2026-11-01): 3 utilerías, 3 categorías, 4 estados, 3 categorías de vehículo, 9 marcas y 9 modelos, estables tras la segunda ejecución</td><td>Aprobada</td></tr>
+  <tr><td>CP-32</td><td>RF-32</td><td>Base con y sin catálogos</td><td>Iniciar el backend o ejecutar el seed dos veces</td><td>Catálogos completos sin duplicados</td><td>`catalogSeed.test.js` en verde</td><td>Aprobada</td></tr>
+  <tr><td>CP-33</td><td>RF-33</td><td>Sesión válida</td><td>Abrir el Dashboard y alternar botones</td><td>Registros grises; botón seleccionado verde; registro habilitado</td><td>`DashboardPage.test.jsx` en verde</td><td>Aprobada</td></tr>
+</table>
+
+<h2>7.2 Matriz de trazabilidad</h2>
+<table>
+  <tr><th>RF</th><th>Criterio de aceptación</th><th>Ruta y función/clase</th><th>CP</th><th>Estado</th></tr>
+  <tr><td>RF-01</td><td>Login válido e inválido</td><td>`src/backend/services/authService.js: login`; `src/frontend/src/pages/LoginPage.jsx`</td><td>CP-01</td><td>Completo</td></tr>
+  <tr><td>RF-02</td><td>Cierre de sesión</td><td>`src/backend/services/authService.js: logout`; `src/frontend/src/components/LogoutPopup.jsx`</td><td>CP-02</td><td>Completo</td></tr>
+  <tr><td>RF-03</td><td>Rutas protegidas</td><td>`src/backend/middlewares/requireAuth.js`; `src/backend/routes/index.js`</td><td>CP-03</td><td>Completo</td></tr>
+  <tr><td>RF-04</td><td>Admin predeterminado idempotente</td><td>`src/backend/services/adminService.js: ensureDefaultAdmin`</td><td>CP-04</td><td>Completo</td></tr>
+  <tr><td>RF-05</td><td>Listar y buscar clientes activos</td><td>`src/backend/services/clienteService.js: list`; `src/frontend/src/pages/ClientesPage.jsx`</td><td>CP-05</td><td>Completo</td></tr>
+  <tr><td>RF-06</td><td>Alta de cliente con vehículo</td><td>`src/backend/services/clienteService.js: create`; `src/frontend/src/pages/NuevoClientePage.jsx`</td><td>CP-06</td><td>Completo</td></tr>
+  <tr><td>RF-07</td><td>Consulta de cliente y vehículos</td><td>`src/backend/services/clienteService.js: getById`; `src/frontend/src/pages/ClienteInfoPage.jsx`</td><td>CP-07</td><td>Completo</td></tr>
+  <tr><td>RF-08</td><td>Edición de cliente</td><td>`src/backend/services/clienteService.js: update`; `src/frontend/src/pages/EditarClientePage.jsx`</td><td>CP-08</td><td>Completo</td></tr>
+  <tr><td>RF-09</td><td>Baja de cliente</td><td>`src/backend/services/clienteService.js: remove`</td><td>CP-09</td><td>Completo</td></tr>
+  <tr><td>RF-10</td><td>Bloqueo por lavado activo (cliente)</td><td>`src/backend/services/clienteService.js: update/remove`; `src/backend/services/lavadoActivoService.js`</td><td>CP-10</td><td>Completo</td></tr>
+  <tr><td>RF-11</td><td>Clientes sin lavados recientes</td><td>`src/backend/services/clienteService.js: list`; `src/frontend/src/pages/DashboardPage.jsx`</td><td>CP-11</td><td>Completo</td></tr>
+  <tr><td>RF-12</td><td>Listar y buscar vehículos</td><td>`src/backend/services/vehiculoService.js: list`; `src/frontend/src/pages/VehiculosPage.jsx`</td><td>CP-12</td><td>Completo</td></tr>
+  <tr><td>RF-13</td><td>Consulta de vehículo y cliente</td><td>`src/backend/services/vehiculoService.js: getById`; `src/frontend/src/pages/VehiculoInfoPage.jsx`</td><td>CP-13</td><td>Completo</td></tr>
+  <tr><td>RF-14</td><td>Alta de vehículo</td><td>`src/backend/services/vehiculoService.js: create`; `src/frontend/src/pages/NuevoVehiculoPage.jsx`</td><td>CP-14</td><td>Completo</td></tr>
+  <tr><td>RF-15</td><td>Edición de vehículo</td><td>`src/backend/services/vehiculoService.js: update`; `src/frontend/src/pages/EditarVehiculoPage.jsx`</td><td>CP-15</td><td>Completo</td></tr>
+  <tr><td>RF-16</td><td>Baja de vehículo</td><td>`src/backend/services/vehiculoService.js: remove`</td><td>CP-16</td><td>Completo</td></tr>
+  <tr><td>RF-17</td><td>Bloqueo por lavado activo (vehículo)</td><td>`src/backend/services/vehiculoService.js: update/remove`; `src/backend/services/lavadoActivoService.js`</td><td>CP-17</td><td>Completo</td></tr>
+  <tr><td>RF-18</td><td>Catálogos en cascada</td><td>`src/backend/services/categoriaVehiculoService.js`; `src/frontend/src/pages/NuevoVehiculoPage.jsx`</td><td>CP-18</td><td>Completo</td></tr>
+  <tr><td>RF-19</td><td>Registro de lavado</td><td>`src/backend/services/lavadoService.js: create`; `src/frontend/src/pages/NuevoLavadoPage.jsx`</td><td>CP-19</td><td>Completo</td></tr>
+  <tr><td>RF-20</td><td>Listado por secciones</td><td>`src/backend/services/lavadoService.js: list`; `src/frontend/src/pages/LavadosPage.jsx`</td><td>CP-20</td><td>Completo</td></tr>
+  <tr><td>RF-21</td><td>Avance de estado</td><td>`src/backend/services/lavadoService.js: update`; `src/frontend/src/pages/LavadosPage.jsx`</td><td>CP-21</td><td>Completo</td></tr>
+  <tr><td>RF-22</td><td>Edición de lavado activo</td><td>`src/backend/services/lavadoService.js: update`; `src/frontend/src/pages/EditarLavadoPage.jsx`</td><td>CP-22</td><td>Completo</td></tr>
+  <tr><td>RF-23</td><td>Detalle del lavado</td><td>`src/frontend/src/components/LavadoInfoPopup.jsx`</td><td>CP-23</td><td>Completo</td></tr>
+  <tr><td>RF-24</td><td>Actualización de utilerías</td><td>`src/backend/services/utileriaService.js: update`; `src/frontend/src/pages/NuevoLavadoPage.jsx`</td><td>CP-24</td><td>Completo</td></tr>
+  <tr><td>RF-25</td><td>Lavados entregados por rango</td><td>`src/backend/services/lavadoService.js: buildListOptions`; `src/frontend/src/pages/DashboardPage.jsx`</td><td>CP-25</td><td>Completo</td></tr>
+  <tr><td>RF-26</td><td>Bloqueo de LAVAR</td><td>`src/frontend/src/pages/ClienteInfoPage.jsx: handleLavar`</td><td>CP-26</td><td>Completo</td></tr>
+  <tr><td>RF-27</td><td>Marcas de tiempo del lavado</td><td>`src/backend/models/Lavado.js`</td><td>CP-27</td><td>Completo</td></tr>
+  <tr><td>RF-28</td><td>DELETE de lavado no permitido</td><td>`src/backend/routes/lavados.js`</td><td>CP-28</td><td>Completo</td></tr>
+  <tr><td>RF-29</td><td>Home con accesos y fecha/hora</td><td>`src/frontend/src/pages/HomePage.jsx`; `src/frontend/src/components/DateTimePanel.jsx`</td><td>CP-29</td><td>Completo</td></tr>
+  <tr><td>RF-30</td><td>Navegación del home</td><td>`src/frontend/src/pages/HomePage.jsx`; `src/frontend/src/App.jsx`</td><td>CP-30</td><td>Completo</td></tr>
+  <tr><td>RF-31</td><td>Script con esquema y datos iniciales</td><td>`src/databaseLavadero/script db/DataBaseLavadero.sql`</td><td>CP-31</td><td>Completo</td></tr>
+  <tr><td>RF-32</td><td>Seed de catálogos</td><td>`src/backend/services/catalogSeedService.js`; `src/backend/server.js`</td><td>CP-32</td><td>Completo</td></tr>
+  <tr><td>RF-33</td><td>Modos y registros del Dashboard</td><td>`src/frontend/src/pages/DashboardPage.jsx`</td><td>CP-33</td><td>Completo</td></tr>
+</table>
+
+<h1>8. Cierre, aportes y fuentes</h1>
+<h2>8.1 Errores conocidos, limitaciones y pendientes</h2>
+<table>
+  <tr><th>Punto</th><th>Detalle</th><th>RF afectado</th></tr>
+  <tr><td>Capturas pendientes</td><td>Las figuras de los recorridos principales deben insertarse antes de la entrega.</td><td>Transversal (evidencia)</td></tr>
+  <tr><td>Identificación pendiente</td><td>Completar `[EquipoXX]`, integrantes y comisión en la portada y en los nombres de archivo.</td><td>—</td></tr>
+  <tr><td>Sin gestión de usuarios ni auditoría</td><td>Fuera de alcance de la primera etapa.</td><td>RF-01 a RF-04 (alcance)</td></tr>
+  <tr><td>Sin paginación</td><td>Los listados traen todos los registros; aceptable para el volumen actual.</td><td>RF-05, RF-12, RF-20</td></tr>
+  <tr><td>Stock y pagos</td><td>El README los menciona, pero no están implementados ni especificados.</td><td>—</td></tr>
+  <tr><td>Zona horaria</td><td>Las fechas de filtros y marcas usan la hora local del servidor.</td><td>RF-25, RF-27</td></tr>
+  <tr><td>Warning de documentación</td><td>La especificación «Tabla Lavado» supera el límite de longitud recomendado; no afecta la ejecución.</td><td>—</td></tr>
+  <tr><td>Pruebas de backend</td><td>Requieren SQL Server disponible; sin él no pueden ejecutarse.</td><td>—</td></tr>
+</table>
+
+<h2>8.2 Aportes del equipo</h2>
+<table>
+  <tr><th>Integrante</th><th>Tareas y archivos</th></tr>
+  <tr><td>[Integrante 1]</td><td>Completar con las tareas y archivos concretos.</td></tr>
+  <tr><td>[Integrante 2]</td><td>Completar con las tareas y archivos concretos.</td></tr>
+</table>
+<p>El equipo revisó y validó las decisiones, la implementación y las pruebas. Las conclusiones
+principales son: el modelo `Lavado → Vehículo → Cliente` sostiene el dominio; los estados del
+lavado y el bloqueo por lavado activo evitan inconsistencias; las pruebas automatizadas
+permiten sostener la trazabilidad; y la documentación de la entrega queda alineada con el
+código real.</p>
+
+<h2>8.3 Fuentes y atribuciones</h2>
+<ul>
+  <li>React, Vite, Tailwind CSS, React Router, Express, Sequelize, tedious y SQL Server:
+      documentación oficial de cada proyecto (consulta 2026).</li>
+  <li>Prototipos, iconos e imágenes del proyecto: material provisto por la cátedra y el equipo,
+      en `src/documentacion/` y `src/frontend/src/assets/`.</li>
+  <li>No se incorporó código de terceros copiado; las dependencias se usan como paquetes
+      declarados en `package.json`.</li>
+</ul>
+
+<h2>8.4 Uso de IA generativa</h2>
+<p>Se utilizó el asistente OpenCode (modelo deepseek-v4.1-flash) para la planificación de
+cambios, la generación y revisión de código, las pruebas y la redacción de esta documentación.
+Los aportes se verificaron con las suites automatizadas (271 pruebas en verde), la ejecución
+manual del script SQL y la revisión del equipo. No se compartieron datos sensibles ni
+credenciales reales.</p>
+
+<h1>Anexo: lista de control</h1>
+<ul>
+  <li>[ ] El informe se exporta a PDF con texto seleccionable y contiene las ocho secciones en orden.</li>
+  <li>[ ] Los integrantes y el equipo están identificados en ambos archivos.</li>
+  <li>[ ] Cada RF tiene criterio, estado, referencia al código y prueba asociada.</li>
+  <li>[ ] Las pruebas distinguen resultado esperado, obtenido y no ejecutado.</li>
+  <li>[ ] Los diagramas y capturas son legibles y están explicados.</li>
+  <li>[ ] El TXT contiene código completo por archivo y rutas reales.</li>
+  <li>[ ] Las instrucciones indican versiones, configuración y ejecución.</li>
+  <li>[ ] Las limitaciones, fuentes y aportes individuales están declarados.</li>
+  <li>[ ] No hay secretos ni datos reales; los archivos se abren correctamente.</li>
+  <li>[ ] Se adjuntaron todos los archivos en la actividad del aula virtual.</li>
+</ul>
+
+</body>
+</html>

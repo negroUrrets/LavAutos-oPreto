@@ -99,4 +99,18 @@ describe('clientService', () => {
     );
     expect(data).toEqual({ codigoPersona: 7 });
   });
+
+  test('createCliente propaga el mensaje y el estado del backend', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: () =>
+        Promise.resolve({ success: false, error: { message: 'El DNI ya esta registrado.' } }),
+    });
+
+    await expect(createCliente({ nombre: 'A' })).rejects.toMatchObject({
+      message: 'El DNI ya esta registrado.',
+      status: 409,
+    });
+  });
 });

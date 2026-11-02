@@ -99,8 +99,8 @@ export default function EditarClientePage() {
         celular: form.celular,
       });
       setPopup({ message: 'La edición de datos se efectuó satisfactoriamente.', action: 'info' });
-    } catch {
-      setWarning('No se pudo guardar la edición.');
+    } catch (error) {
+      setWarning(error?.status ? error.message : 'No se pudo guardar la edición.');
     }
   }
 

@@ -8,10 +8,33 @@ const {
   Vehiculo,
   Lavado,
 } = require('../models');
-const { createCrudService } = require('./crudService');
+const { createCrudService, pickFields } = require('./crudService');
 const { assertSinLavadoActivo } = require('./lavadoActivoService');
 const { requireFields, assertExists } = require('../utils/validators');
+const { normalizarPatente, clavePatente } = require('../utils/normalizers');
 const AppError = require('../utils/AppError');
+
+const FIELDS = ['patenteVehi', 'estadoVehi', 'cliente', 'modeloVehi'];
+const PATENTE_DUPLICADA = 'La patente ya esta registrada.';
+
+function esErrorUnico(error) {
+  return Boolean(error) && error.name === 'SequelizeUniqueConstraintError';
+}
+
+function whereClavePatente(clave) {
+  return sequelize.where(
+    sequelize.fn(
+      'UPPER',
+      sequelize.fn(
+        'REPLACE',
+        sequelize.fn('REPLACE', sequelize.col('patenteVehi'), '-', ''),
+        ' ',
+        '',
+      ),
+    ),
+    clave,
+  );
+}
 
 const include = [
   { model: Cliente, as: 'datosCliente', include: [{ model: Persona, as: 'persona' }] },
@@ -28,10 +51,30 @@ const include = [
   },
 ];
 
+async function validarCreacion(data, transaction) {
+  requireFields(data, ['patenteVehi', 'estadoVehi', 'cliente', 'modeloVehi']);
+  await assertExists(Cliente, data.cliente, 'El cliente no existe.', transaction);
+  await assertExists(
+    ModeloVehiculo,
+    data.modeloVehi,
+    'El modelo de vehiculo no existe.',
+    transaction,
+  );
+}
+
+async function validarActualizacion(data) {
+  if (data.cliente !== undefined) {
+    await assertExists(Cliente, data.cliente, 'El cliente no existe.');
+  }
+  if (data.modeloVehi !== undefined) {
+    await assertExists(ModeloVehiculo, data.modeloVehi, 'El modelo de vehiculo no existe.');
+  }
+}
+
 const baseVehiculoService = createCrudService({
   model: Vehiculo,
   name: 'Vehiculo',
-  fields: ['patenteVehi', 'estadoVehi', 'cliente', 'modeloVehi'],
+  fields: FIELDS,
   include,
   buildListOptions: (query) => {
     const where = { estadoVehi: true };
@@ -40,20 +83,56 @@ const baseVehiculoService = createCrudService({
     }
     return { where };
   },
-  validateCreate: async (payload) => {
-    requireFields(payload, ['patenteVehi', 'estadoVehi', 'cliente', 'modeloVehi']);
-    await assertExists(Cliente, payload.cliente, 'El cliente no existe.');
-    await assertExists(ModeloVehiculo, payload.modeloVehi, 'El modelo de vehiculo no existe.');
-  },
-  validateUpdate: async (payload) => {
-    if (payload.cliente !== undefined) {
-      await assertExists(Cliente, payload.cliente, 'El cliente no existe.');
-    }
-    if (payload.modeloVehi !== undefined) {
-      await assertExists(ModeloVehiculo, payload.modeloVehi, 'El modelo de vehiculo no existe.');
-    }
-  },
+  validateCreate: validarCreacion,
+  validateUpdate: validarActualizacion,
 });
+
+async function crearEnTransaccion(payload, transaction) {
+  const data = {
+    ...pickFields(payload, FIELDS),
+    patenteVehi: normalizarPatente(payload.patenteVehi),
+  };
+  await validarCreacion(data, transaction);
+  const clave = clavePatente(data.patenteVehi);
+
+  const existente = await Vehiculo.findOne({
+    where: whereClavePatente(clave),
+    transaction,
+  });
+
+  if (existente) {
+    if (existente.estadoVehi) {
+      throw new AppError(PATENTE_DUPLICADA, 409);
+    }
+
+    await existente.update(
+      {
+        patenteVehi: data.patenteVehi,
+        estadoVehi: true,
+        cliente: data.cliente,
+        modeloVehi: data.modeloVehi,
+      },
+      { transaction },
+    );
+
+    return Vehiculo.findByPk(existente.codigoVehi, { include, transaction });
+  }
+
+  return Vehiculo.create(data, { transaction });
+}
+
+async function create(payload) {
+  try {
+    return await sequelize.transaction((transaction) =>
+      crearEnTransaccion(payload, transaction),
+    );
+  } catch (error) {
+    if (esErrorUnico(error)) {
+      throw new AppError(PATENTE_DUPLICADA, 409);
+    }
+    throw error;
+  }
+}
 
 async function update(id, payload) {
   const vehiculo = await Vehiculo.findByPk(id);
@@ -62,7 +141,31 @@ async function update(id, payload) {
   }
 
   await assertSinLavadoActivo([id]);
-  return baseVehiculoService.update(id, payload);
+
+  const data = pickFields(payload, FIELDS);
+  if (data.patenteVehi !== undefined) {
+    data.patenteVehi = normalizarPatente(data.patenteVehi);
+    if (!data.patenteVehi) {
+      throw new AppError('La patente es obligatoria.', 400);
+    }
+    await validarActualizacion(data);
+
+    const existente = await Vehiculo.findOne({
+      where: whereClavePatente(clavePatente(data.patenteVehi)),
+    });
+    if (existente && String(existente.codigoVehi) !== String(id)) {
+      throw new AppError(PATENTE_DUPLICADA, 409);
+    }
+  }
+
+  try {
+    return await baseVehiculoService.update(id, data);
+  } catch (error) {
+    if (esErrorUnico(error)) {
+      throw new AppError(PATENTE_DUPLICADA, 409);
+    }
+    throw error;
+  }
 }
 
 async function remove(id) {
@@ -85,4 +188,11 @@ async function remove(id) {
   });
 }
 
-module.exports = { ...baseVehiculoService, update, remove };
+module.exports = {
+  ...baseVehiculoService,
+  create,
+  update,
+  remove,
+  crearEnTransaccion,
+  PATENTE_DUPLICADA,
+};

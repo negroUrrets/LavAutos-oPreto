@@ -44,7 +44,7 @@ async function createBaseFixtures() {
   const persona = await Persona.create({
     nombre: 'Ana',
     apellido: 'Perez',
-    dni: 12345678,
+    dni: Number(`9${String(Date.now()).slice(-8)}${Math.floor(Math.random() * 90 + 10)}`),
     email: `ana-${tag}@example.com`,
     celular: 5551234,
   });

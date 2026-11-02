@@ -1,3 +1,5 @@
+import { crearErrorHttp } from '../utils/httpError.js';
+
 export async function searchClientes(texto) {
   const response = await fetch(`/api/clientes?buscar=${encodeURIComponent(texto)}`, {
     credentials: 'include',
@@ -58,7 +60,7 @@ export async function updateCliente(id, datos) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo actualizar el cliente.');
+    throw await crearErrorHttp(response, 'No se pudo actualizar el cliente.');
   }
 
   const body = await response.json();
@@ -74,7 +76,7 @@ export async function createCliente(cliente) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo crear el cliente.');
+    throw await crearErrorHttp(response, 'No se pudo crear el cliente.');
   }
 
   const body = await response.json();

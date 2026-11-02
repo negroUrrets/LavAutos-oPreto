@@ -1,3 +1,5 @@
+import { crearErrorHttp } from '../utils/httpError.js';
+
 async function listResource(path) {
   const response = await fetch(path, { credentials: 'include' });
 
@@ -49,7 +51,7 @@ export async function createVehiculo(vehiculo) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo crear el vehiculo.');
+    throw await crearErrorHttp(response, 'No se pudo crear el vehiculo.');
   }
 
   const body = await response.json();
@@ -65,7 +67,7 @@ export async function updateVehiculo(id, vehiculo) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo actualizar el vehiculo.');
+    throw await crearErrorHttp(response, 'No se pudo actualizar el vehiculo.');
   }
 
   const body = await response.json();

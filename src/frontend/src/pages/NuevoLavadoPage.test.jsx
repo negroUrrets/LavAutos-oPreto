@@ -88,6 +88,24 @@ describe('NuevoLavadoPage', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
   });
 
+  test('el combobox de estado no ofrece Entregado', async () => {
+    estados = [
+      { codigoEstado: 20, descripcionEstado: 'En Espera' },
+      { codigoEstado: 21, descripcionEstado: 'Lavando' },
+      { codigoEstado: 22, descripcionEstado: 'Terminado' },
+      { codigoEstado: 23, descripcionEstado: 'Entregado' },
+    ];
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    const combo = screen.getByLabelText('Estado...');
+    const opciones = Array.from(combo.querySelectorAll('option')).map(
+      (opcion) => opcion.textContent,
+    );
+
+    expect(opciones).toEqual(['Seleccionar...', 'En Espera', 'Lavando', 'Terminado']);
+  });
+
   test('sin sesión válida redirige al login', async () => {
     sessionOk = false;
     renderPage();

@@ -218,7 +218,7 @@ describe('EditarVehiculoPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Registrar' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo guardar la edición.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo actualizar el vehiculo.');
     expect(screen.queryByText('INFO PAGE')).not.toBeInTheDocument();
   });
 

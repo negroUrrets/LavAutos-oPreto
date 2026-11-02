@@ -84,4 +84,18 @@ describe('vehicleService', () => {
     );
     expect(data).toEqual({ codigoVehi: 3 });
   });
+
+  test('createVehiculo propaga el mensaje y el estado del backend', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: () =>
+        Promise.resolve({ success: false, error: { message: 'La patente ya esta registrada.' } }),
+    });
+
+    await expect(createVehiculo({ patenteVehi: 'AB123CD' })).rejects.toMatchObject({
+      message: 'La patente ya esta registrada.',
+      status: 409,
+    });
+  });
 });
