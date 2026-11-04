@@ -22,8 +22,8 @@ const { requireFields, assertExists } = require('../utils/validators');
 const AppError = require('../utils/AppError');
 
 const FECHA_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const CREATE_FIELDS = ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria', 'detallesLavado'];
-const UPDATE_FIELDS = ['estado', 'vehi', 'categoriaLavado', 'utileria', 'detallesLavado'];
+const CREATE_FIELDS = ['estado', 'vehi', 'categoriaLavado', 'login', 'detallesLavado'];
+const UPDATE_FIELDS = ['estado', 'vehi', 'categoriaLavado', 'detallesLavado'];
 
 function parseFecha(valor, finDelDia = false) {
   if (!FECHA_PATTERN.test(String(valor))) {
@@ -52,11 +52,11 @@ const include = [
   },
   { model: CategoriaLavado, as: 'categoria' },
   { model: EstadoLavado, as: 'datosEstado' },
-  { model: Utileria, as: 'datosUtileria' },
+  { model: Utileria, as: 'utilerias', through: { attributes: [] } },
 ];
 
 async function validarCreacion(data) {
-  requireFields(data, ['estado', 'vehi', 'categoriaLavado', 'login', 'utileria']);
+  requireFields(data, ['estado', 'vehi', 'categoriaLavado', 'login']);
   await assertExists(Vehiculo, data.vehi, 'El vehiculo no existe.');
   await assertExists(
     CategoriaLavado,
@@ -65,7 +65,34 @@ async function validarCreacion(data) {
   );
   await assertExists(Login, data.login, 'El login no existe.');
   await assertExists(EstadoLavado, data.estado, 'El estado no existe.');
-  await assertExists(Utileria, data.utileria, 'La utileria no existe.');
+}
+
+function normalizarUtilerias(valor) {
+  if (!Array.isArray(valor)) {
+    throw new AppError('Las utilerias deben ser un arreglo.', 400);
+  }
+
+  const ids = [...new Set(valor.map((id) => String(id)).filter((id) => id !== ''))];
+
+  if (ids.length === 0) {
+    throw new AppError('Seleccione al menos una utileria.', 400);
+  }
+
+  return ids;
+}
+
+async function assertUtilidadesExisten(ids, transaction) {
+  const filas = await Utileria.findAll({
+    where: { codigoUtileria: { [Op.in]: ids } },
+    attributes: ['codigoUtileria'],
+    transaction,
+  });
+
+  if (filas.length !== ids.length) {
+    throw new AppError('La utileria no existe.', 400);
+  }
+
+  return ids;
 }
 
 async function validarActualizacion(data) {
@@ -84,9 +111,6 @@ async function validarActualizacion(data) {
   }
   if (data.estado !== undefined) {
     await assertExists(EstadoLavado, data.estado, 'El estado no existe.');
-  }
-  if (data.utileria !== undefined) {
-    await assertExists(Utileria, data.utileria, 'La utileria no existe.');
   }
 }
 
@@ -132,9 +156,11 @@ async function bloquearVehiculos(vehiculoIds, transaction) {
 
 async function create(payload) {
   const data = pickFields(payload, CREATE_FIELDS);
+  const utilerias = normalizarUtilerias(payload.utilerias);
   await validarCreacion(data);
 
   return sequelize.transaction(async (transaction) => {
+    const ids = await assertUtilidadesExisten(utilerias, transaction);
     await bloquearVehiculos([data.vehi], transaction);
     await assertEstadoInicialPermitido(data.estado, transaction);
 
@@ -142,12 +168,17 @@ async function create(payload) {
       await assertSinLavadoActivo([data.vehi], transaction);
     }
 
-    return Lavado.create(data, { transaction });
+    const lavado = await Lavado.create(data, { transaction });
+    await lavado.setUtilerias(ids, { transaction });
+
+    return Lavado.findByPk(lavado.codigoLavado, { include, transaction });
   });
 }
 
 async function update(id, payload) {
   const data = pickFields(payload, UPDATE_FIELDS);
+  const utilerias =
+    payload.utilerias === undefined ? null : normalizarUtilerias(payload.utilerias);
   await validarActualizacion(data);
 
   return sequelize.transaction(async (transaction) => {
@@ -170,6 +201,12 @@ async function update(id, payload) {
     }
 
     await lavado.update(data, { transaction });
+
+    if (utilerias) {
+      const ids = await assertUtilidadesExisten(utilerias, transaction);
+      await lavado.setUtilerias(ids, { transaction });
+    }
+
     return Lavado.findByPk(id, { include, transaction });
   });
 }

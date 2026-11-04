@@ -6,6 +6,8 @@ const {
   Lavado,
   CategoriaLavado,
   EstadoLavado,
+  Utileria,
+  DetalleUtileria,
   Usuario,
   Login,
 } = require('../models');
@@ -25,6 +27,7 @@ let estadoEntregadoId;
 const createdLavados = [];
 const createdCategoriasLavado = [];
 const vehiculosExtra = [];
+const createdUtilidades = [];
 
 beforeAll(async () => {
   await sequelize.authenticate();
@@ -67,6 +70,10 @@ afterEach(async () => {
     await Lavado.destroy({ where: { vehi: id } });
     await Vehiculo.destroy({ where: { codigoVehi: id } });
   }
+  while (createdUtilidades.length) {
+    const id = createdUtilidades.pop();
+    await Utileria.destroy({ where: { codigoUtileria: id } });
+  }
 });
 
 afterAll(async () => {
@@ -82,7 +89,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const res = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -98,7 +105,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const res = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: 999999999,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -111,7 +118,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const res = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: 999999999,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -124,13 +131,143 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const res = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: 999999999,
+      utilerias: [999999999],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
     });
 
     expect(res.status).toBe(400);
+  });
+
+  test('POST /api/lavados con varias utilerias las devuelve todas (201)', async () => {
+    const otra = await Utileria.create({
+      descripcionUtileria: `Otra ${suffix()}`,
+      estadoUtileria: false,
+    });
+    createdUtilidades.push(otra.codigoUtileria);
+
+    const res = await agent.post('/api/lavados').send({
+      estado: estadoEnEsperaId,
+      utilerias: [ids.utileriaId, otra.codigoUtileria],
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(res.body.data.codigoLavado);
+
+    expect(res.status).toBe(201);
+    expect(
+      res.body.data.utilerias.map((utileria) => String(utileria.codigoUtileria)).sort(),
+    ).toEqual([String(ids.utileriaId), String(otra.codigoUtileria)].sort());
+  });
+
+  test('dos lavados con selecciones distintas conservan cada conjunto (200)', async () => {
+    const otra = await Utileria.create({
+      descripcionUtileria: `Otra ${suffix()}`,
+      estadoUtileria: false,
+    });
+    createdUtilidades.push(otra.codigoUtileria);
+
+    const vehiculoB = await Vehiculo.create({
+      patenteVehi: `V${suffix()}`,
+      estadoVehi: true,
+      cliente: ids.clienteId,
+      modeloVehi: ids.modeloVehiculoId,
+    });
+    vehiculosExtra.push(vehiculoB.codigoVehi);
+
+    const primero = await agent.post('/api/lavados').send({
+      estado: estadoEnEsperaId,
+      utilerias: [ids.utileriaId],
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    const segundo = await agent.post('/api/lavados').send({
+      estado: estadoEnEsperaId,
+      utilerias: [otra.codigoUtileria],
+      vehi: vehiculoB.codigoVehi,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(primero.body.data.codigoLavado, segundo.body.data.codigoLavado);
+
+    const primeroGet = await agent.get(`/api/lavados/${primero.body.data.codigoLavado}`);
+    const segundoGet = await agent.get(`/api/lavados/${segundo.body.data.codigoLavado}`);
+
+    expect(
+      primeroGet.body.data.utilerias.map((utileria) => String(utileria.codigoUtileria)),
+    ).toEqual([String(ids.utileriaId)]);
+    expect(
+      segundoGet.body.data.utilerias.map((utileria) => String(utileria.codigoUtileria)),
+    ).toEqual([String(otra.codigoUtileria)]);
+  });
+
+  test('asignar utilerias no modifica estadoUtileria del catalogo', async () => {
+    const antes = await Utileria.findByPk(ids.utileriaId);
+
+    const res = await agent.post('/api/lavados').send({
+      estado: estadoEnEsperaId,
+      utilerias: [ids.utileriaId],
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(res.body.data.codigoLavado);
+
+    const despues = await Utileria.findByPk(ids.utileriaId);
+
+    expect(res.status).toBe(201);
+    expect(Boolean(despues.estadoUtileria)).toBe(Boolean(antes.estadoUtileria));
+  });
+
+  test('PUT /api/lavados/:id reemplaza el conjunto de utilerias (200)', async () => {
+    const otra = await Utileria.create({
+      descripcionUtileria: `Otra ${suffix()}`,
+      estadoUtileria: false,
+    });
+    createdUtilidades.push(otra.codigoUtileria);
+
+    const create = await agent.post('/api/lavados').send({
+      estado: estadoEnEsperaId,
+      utilerias: [ids.utileriaId],
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(create.body.data.codigoLavado);
+
+    const res = await agent
+      .put(`/api/lavados/${create.body.data.codigoLavado}`)
+      .send({ utilerias: [otra.codigoUtileria] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.utilerias.map((utileria) => String(utileria.codigoUtileria))).toEqual([
+      String(otra.codigoUtileria),
+    ]);
+  });
+
+  test('PUT /api/lavados/:id con utileria inexistente responde 400', async () => {
+    const create = await agent.post('/api/lavados').send({
+      estado: estadoEnEsperaId,
+      utilerias: [ids.utileriaId],
+      vehi: vehiculoId,
+      categoriaLavado: ids.categoriaLavadoId,
+      login: ids.loginId,
+    });
+    createdLavados.push(create.body.data.codigoLavado);
+
+    const res = await agent
+      .put(`/api/lavados/${create.body.data.codigoLavado}`)
+      .send({ utilerias: [999999999] });
+
+    expect(res.status).toBe(400);
+
+    const enDb = await agent.get(`/api/lavados/${create.body.data.codigoLavado}`);
+    expect(enDb.body.data.utilerias.map((utileria) => String(utileria.codigoUtileria))).toEqual([
+      String(ids.utileriaId),
+    ]);
   });
 
   test('GET /api/lavados lista lavados (200)', async () => {
@@ -144,7 +281,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -162,7 +299,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
   test('GET /api/lavados?vehi=<codigo> filtra por vehículo (200)', async () => {
     const create = await agent.post('/api/lavados').send({
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -185,7 +322,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -205,7 +342,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -238,7 +375,7 @@ describe('CRUD de lavados y categoría de lavado', () => {
     const create = await agent.post('/api/lavados').send({
       fechaHoraLavado: new Date().toISOString(),
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: categoriaId,
       login: ids.loginId,
@@ -255,7 +392,7 @@ describe('marcas de tiempo del lavado', () => {
   function crearLavado(extra = {}) {
     return agent.post('/api/lavados').send({
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -321,14 +458,18 @@ describe('marcas de tiempo del lavado', () => {
 });
 
 describe('filtros por fecha de entrega', () => {
-  function crearLavado() {
-    return Lavado.create({
+  async function crearLavado() {
+    const lavado = await Lavado.create({
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
     });
+    await DetalleUtileria.create({
+      codigoLavado: lavado.codigoLavado,
+      codigoUtileria: ids.utileriaId,
+    });
+    return lavado;
   }
 
   async function fijarEntrega(id, fecha) {
@@ -366,7 +507,7 @@ describe('un solo lavado activo por vehiculo', () => {
   function crearLavado(extra = {}, vehiculo = vehiculoId) {
     return agent.post('/api/lavados').send({
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculo,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
@@ -457,10 +598,13 @@ describe('un solo lavado activo por vehiculo', () => {
     const vehiculoB = await crearVehiculoExtra();
     const segunda = await Lavado.create({
       estado: estadoEntregadoId,
-      utileria: ids.utileriaId,
       vehi: vehiculoB.codigoVehi,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,
+    });
+    await DetalleUtileria.create({
+      codigoLavado: segunda.codigoLavado,
+      codigoUtileria: ids.utileriaId,
     });
     createdLavados.push(segunda.codigoLavado);
 
@@ -477,7 +621,7 @@ describe('transiciones de estado y login de la sesion', () => {
   function crearLavado(extra = {}) {
     return agent.post('/api/lavados').send({
       estado: estadoEnEsperaId,
-      utileria: ids.utileriaId,
+      utilerias: [ids.utileriaId],
       vehi: vehiculoId,
       categoriaLavado: ids.categoriaLavadoId,
       login: ids.loginId,

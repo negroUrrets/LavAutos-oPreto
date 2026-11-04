@@ -6,6 +6,7 @@ const {
   Vehiculo,
   Lavado,
   EstadoLavado,
+  DetalleUtileria,
   CategoriaVehiculo,
   MarcaVehiculo,
   ModeloVehiculo,
@@ -13,6 +14,16 @@ const {
 const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
 const { createBaseFixtures, removeBaseFixtures, suffix } = require('./helpers/fixtures');
 const { loginAgent, removeTestUser } = require('./helpers/auth');
+
+async function crearLavadoConUtileria(data) {
+  const { utileria, ...lavadoData } = data;
+  const lavado = await Lavado.create(lavadoData);
+  await DetalleUtileria.create({
+    codigoLavado: lavado.codigoLavado,
+    codigoUtileria: utileria,
+  });
+  return lavado;
+}
 
 let ids;
 let agent;
@@ -181,7 +192,7 @@ describe('CRUD de vehículos y catálogos', () => {
     const vehiculoId = create.body.data.codigoVehi;
     createdVehiculos.push(vehiculoId);
 
-    await Lavado.create({
+    await crearLavadoConUtileria({
       fechaHoraLavado: new Date(),
       estado: ids.estadoLavadoId,
       utileria: ids.utileriaId,
@@ -206,7 +217,7 @@ describe('CRUD de vehículos y catálogos', () => {
     const vehiculoId = create.body.data.codigoVehi;
     createdVehiculos.push(vehiculoId);
 
-    await Lavado.create({
+    await crearLavadoConUtileria({
       fechaHoraLavado: new Date(),
       estado: ids.estadoLavadoAltId,
       utileria: ids.utileriaId,
@@ -231,7 +242,7 @@ describe('CRUD de vehículos y catálogos', () => {
     const vehiculoId = create.body.data.codigoVehi;
     createdVehiculos.push(vehiculoId);
 
-    await Lavado.create({
+    await crearLavadoConUtileria({
       estado: estadoEnEsperaId,
       utileria: ids.utileriaId,
       vehi: vehiculoId,
@@ -253,7 +264,7 @@ describe('CRUD de vehículos y catálogos', () => {
     const vehiculoId = create.body.data.codigoVehi;
     createdVehiculos.push(vehiculoId);
 
-    await Lavado.create({
+    await crearLavadoConUtileria({
       estado: estadoEnEsperaId,
       utileria: ids.utileriaId,
       vehi: vehiculoId,
@@ -276,7 +287,7 @@ describe('CRUD de vehículos y catálogos', () => {
     const vehiculoId = create.body.data.codigoVehi;
     createdVehiculos.push(vehiculoId);
 
-    await Lavado.create({
+    await crearLavadoConUtileria({
       estado: estadoEntregadoId,
       utileria: ids.utileriaId,
       vehi: vehiculoId,

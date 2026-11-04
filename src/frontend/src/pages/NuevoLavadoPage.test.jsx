@@ -126,16 +126,54 @@ describe('NuevoLavadoPage', () => {
     expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute('aria-checked', 'false');
   });
 
-  test('tildar una utilería actualiza su estado', async () => {
+  test('tildar una utilería no actualiza el catálogo y la incluye en el alta', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText('AC-125-BF');
 
     await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+    await user.click(screen.getByRole('switch', { name: 'Basico' }));
+    await user.selectOptions(screen.getByLabelText('Estado...'), '20');
+    await user.click(screen.getByRole('button', { name: 'Registrar Lavado' }));
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
       '/api/utilerias/1',
-      expect.objectContaining({ method: 'PUT' }),
+      expect.anything(),
+    );
+    expect(postBody.utilerias).toEqual(['1']);
+  });
+
+  test('permite seleccionar varias utilerías y las envía todas', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Balizas' }));
+    await user.click(screen.getByRole('switch', { name: 'Basico' }));
+    await user.selectOptions(screen.getByLabelText('Estado...'), '20');
+    await user.click(screen.getByRole('button', { name: 'Registrar Lavado' }));
+    await user.click(screen.getByRole('button', { name: 'ACEPTAR' }));
+
+    expect(await screen.findByText('CLIENTE INFO PAGE')).toBeInTheDocument();
+    expect(postBody.utilerias).toEqual(['1', '2']);
+  });
+
+  test('exige al menos una utilería', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('AC-125-BF');
+
+    await user.click(screen.getByRole('switch', { name: 'Basico' }));
+    await user.selectOptions(screen.getByLabelText('Estado...'), '20');
+    await user.click(screen.getByRole('button', { name: 'Registrar Lavado' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Seleccione al menos una utileria.');
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      '/api/lavados',
+      expect.anything(),
     );
   });
 
@@ -175,7 +213,7 @@ describe('NuevoLavadoPage', () => {
       vehi: '9',
       categoriaLavado: '10',
       estado: '20',
-      utileria: '1',
+      utilerias: ['1'],
       detallesLavado: 'Lavado 1',
       login: 3,
     });
@@ -202,6 +240,7 @@ describe('NuevoLavadoPage', () => {
     expect(screen.getByLabelText('Detalles')).toHaveValue('');
     expect(screen.getByLabelText('Estado...')).toHaveValue('');
     expect(screen.getByRole('switch', { name: 'Basico' })).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('checkbox', { name: 'Auxilio' })).not.toBeChecked();
   });
 
   test('Cancelar vuelve a la información sin registrar', async () => {

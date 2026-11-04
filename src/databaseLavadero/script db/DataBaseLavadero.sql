@@ -208,7 +208,6 @@ BEGIN
         categoriaLavado BIGINT       NOT NULL,
         login           BIGINT       NOT NULL,
         estado          BIGINT       NOT NULL,
-        utileria        BIGINT       NOT NULL,
         detallesLavado  VARCHAR(255) NULL,
         fechaHoraLavadoTerminado DATETIME2    NOT NULL,
         CONSTRAINT PK_Lavado PRIMARY KEY (codigoLavado),
@@ -219,12 +218,25 @@ BEGIN
         CONSTRAINT FK_Lavado_Login FOREIGN KEY (login)
             REFERENCES dbo.Login (codigoLogin),
         CONSTRAINT FK_Lavado_EstadoLavado FOREIGN KEY (estado)
-            REFERENCES dbo.EstadoLavado (codigoEstado),
-        CONSTRAINT FK_Lavado_Utileria FOREIGN KEY (utileria)
-            REFERENCES dbo.Utileria (codigoUtileria)
+            REFERENCES dbo.EstadoLavado (codigoEstado)
     );
 END
 
+GO
+
+IF OBJECT_ID(N'dbo.DetalleUtileria', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.DetalleUtileria
+    (
+        codigoLavado   BIGINT NOT NULL,
+        codigoUtileria BIGINT NOT NULL,
+        CONSTRAINT PK_DetalleUtileria PRIMARY KEY (codigoLavado, codigoUtileria),
+        CONSTRAINT FK_DetalleUtileria_Lavado FOREIGN KEY (codigoLavado)
+            REFERENCES dbo.Lavado (codigoLavado) ON DELETE CASCADE,
+        CONSTRAINT FK_DetalleUtileria_Utileria FOREIGN KEY (codigoUtileria)
+            REFERENCES dbo.Utileria (codigoUtileria)
+    );
+END
 GO
 /* 5. Datos iniciales de catalogos */
 

@@ -11,7 +11,6 @@ const Lavado = sequelize.define(
     categoriaLavado: { type: DataTypes.BIGINT, allowNull: false },
     login: { type: DataTypes.BIGINT, allowNull: false },
     estado: { type: DataTypes.BIGINT, allowNull: false },
-    utileria: { type: DataTypes.BIGINT, allowNull: false },
     detallesLavado: { type: DataTypes.STRING(255), allowNull: true },
   },
   { tableName: 'Lavado', timestamps: false },

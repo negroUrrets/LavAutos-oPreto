@@ -1,8 +1,18 @@
 const app = require('../app');
-const { sequelize, Persona, Cliente, Vehiculo, Lavado, EstadoLavado } = require('../models');
+const { sequelize, Persona, Cliente, Vehiculo, Lavado, EstadoLavado, DetalleUtileria } = require('../models');
 const { ensureLavadoCatalogs } = require('../services/catalogSeedService');
 const { createBaseFixtures, removeBaseFixtures, suffix } = require('./helpers/fixtures');
 const { loginAgent, removeTestUser } = require('./helpers/auth');
+
+async function crearLavadoConUtileria(data) {
+  const { utileria, ...lavadoData } = data;
+  const lavado = await Lavado.create(lavadoData);
+  await DetalleUtileria.create({
+    codigoLavado: lavado.codigoLavado,
+    codigoUtileria: utileria,
+  });
+  return lavado;
+}
 
 const createdClientes = [];
 let agent;
@@ -242,7 +252,7 @@ describe('CRUD de clientes', () => {
       cliente: clienteId,
       modeloVehi: ids.modeloVehiculoId,
     });
-    await Lavado.create({
+    await crearLavadoConUtileria({
       fechaHoraLavado: new Date(),
       estado: ids.estadoLavadoId,
       utileria: ids.utileriaId,
@@ -282,7 +292,7 @@ describe('CRUD de clientes', () => {
       cliente: clienteId,
       modeloVehi: ids.modeloVehiculoId,
     });
-    await Lavado.create({
+    await crearLavadoConUtileria({
       fechaHoraLavado: new Date(),
       estado: ids.estadoLavadoAltId,
       utileria: ids.utileriaId,
@@ -327,7 +337,7 @@ describe('CRUD de clientes', () => {
       cliente: conLavadoId,
       modeloVehi: ids.modeloVehiculoId,
     });
-    const lavado = await Lavado.create({
+    const lavado = await crearLavadoConUtileria({
       estado: ids.estadoLavadoId,
       utileria: ids.utileriaId,
       vehi: vehiculo.codigoVehi,
@@ -365,7 +375,7 @@ describe('CRUD de clientes', () => {
       cliente: clienteId,
       modeloVehi: ids.modeloVehiculoId,
     });
-    await Lavado.create({
+    await crearLavadoConUtileria({
       estado: estadoEnEsperaId,
       utileria: ids.utileriaId,
       vehi: vehiculo.codigoVehi,
@@ -399,7 +409,7 @@ describe('CRUD de clientes', () => {
       cliente: clienteId,
       modeloVehi: ids.modeloVehiculoId,
     });
-    await Lavado.create({
+    await crearLavadoConUtileria({
       estado: estadoEnEsperaId,
       utileria: ids.utileriaId,
       vehi: vehiculo.codigoVehi,
@@ -435,7 +445,7 @@ describe('CRUD de clientes', () => {
       cliente: clienteId,
       modeloVehi: ids.modeloVehiculoId,
     });
-    await Lavado.create({
+    await crearLavadoConUtileria({
       estado: estadoEntregadoId,
       utileria: ids.utileriaId,
       vehi: vehiculo.codigoVehi,

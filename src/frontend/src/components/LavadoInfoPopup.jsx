@@ -11,6 +11,10 @@ export default function LavadoInfoPopup({ lavado, onClose }) {
   const vehiculo = lavado.vehiculo ?? {};
   const modelo = vehiculo.modelo ?? {};
   const persona = vehiculo.datosCliente?.persona ?? {};
+  const utilerias = (lavado.utilerias ?? [])
+    .map((utileria) => utileria.descripcionUtileria)
+    .filter(Boolean)
+    .join(' - ');
 
   return (
     <div
@@ -19,12 +23,17 @@ export default function LavadoInfoPopup({ lavado, onClose }) {
       aria-modal="true"
     >
       <div className="w-full max-w-lg rounded-3xl border-2 border-gray-400 bg-brand-pink p-8">
-        <h2 className="text-center text-xl font-bold text-brand-navy">Informacion del Lavado</h2>
+        <h2 className="text-center text-xl font-bold text-green-600">Informacion del Lavado</h2>
         <dl className="mt-4 space-y-1">
           <InfoRow label="PATENTE" value={vehiculo.patenteVehi} />
           <InfoRow label="CATEGORIA" value={lavado.categoria?.descripcionLavado} />
           <InfoRow label="MODELO" value={modelo.modeloVehi} />
           <InfoRow label="MARCA" value={modelo.marca?.marcaVehi} />
+          <InfoRow label="DETALLES" value={lavado.detallesLavado ?? ''} />
+          <InfoRow label="UTILERIAS" value={utilerias} />
+        </dl>
+        <hr className="my-2 border-t border-brand-navy" />
+        <dl className="space-y-1">
           <InfoRow label="DNI" value={persona.dni} />
           <InfoRow label="NOMBRE" value={persona.nombre} />
           <InfoRow label="APELLIDO" value={persona.apellido} />

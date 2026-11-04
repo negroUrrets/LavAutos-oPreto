@@ -78,10 +78,11 @@ beforeEach(() => {
     estado: 1,
     detallesLavado: 'Lavado inicial',
     vehiculo: { patenteVehi: 'AC-125-BF' },
+    utilerias: [{ codigoUtileria: 1, descripcionUtileria: 'Auxilio' }],
   };
   utilerias = [
-    { codigoUtileria: 1, descripcionUtileria: 'Auxilio', estadoUtileria: true },
-    { codigoUtileria: 2, descripcionUtileria: 'Balizas', estadoUtileria: false },
+    { codigoUtileria: 1, descripcionUtileria: 'Auxilio', estadoUtileria: false },
+    { codigoUtileria: 2, descripcionUtileria: 'Balizas', estadoUtileria: true },
   ];
   categorias = [
     { codigoCategoriaLavado: 10, descripcionLavado: 'Basico' },
@@ -130,32 +131,44 @@ describe('EditarLavadoPage', () => {
     expect(screen.queryByRole('button', { name: 'Registrar' })).not.toBeInTheDocument();
   });
 
-  test('tildar una utileria actualiza su estado', async () => {
+  test('tildar una utileria no actualiza el catalogo', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
 
     await user.click(screen.getByRole('checkbox', { name: 'Balizas' }));
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
       '/api/utilerias/2',
-      expect.objectContaining({ method: 'PUT' }),
+      expect.anything(),
     );
     expect(screen.getByRole('checkbox', { name: 'Balizas' })).toBeChecked();
   });
 
-  test('destildar una utileria actualiza su estado', async () => {
+  test('destildar una utileria no actualiza el catalogo', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
 
     await user.click(screen.getByRole('checkbox', { name: 'Auxilio' }));
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
       '/api/utilerias/1',
-      expect.objectContaining({ method: 'PUT' }),
+      expect.anything(),
     );
     expect(screen.getByRole('checkbox', { name: 'Auxilio' })).not.toBeChecked();
+  });
+
+  test('envia todas las utilerias tildadas', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Editar Lavado: AC-125-BF' });
+
+    await user.click(screen.getByRole('checkbox', { name: 'Balizas' }));
+    await user.click(screen.getByRole('button', { name: 'Registrar' }));
+
+    expect(await screen.findByText('Lavado editado exitosamente')).toBeInTheDocument();
+    expect(putLavadoBody.utilerias).toEqual(['1', '2']);
   });
 
   test('solo un toggle de categoria queda encendido', async () => {
@@ -214,7 +227,7 @@ describe('EditarLavadoPage', () => {
     expect(putLavadoBody).toEqual({
       categoriaLavado: '10',
       estado: '1',
-      utileria: '1',
+      utilerias: ['1'],
       detallesLavado: 'Actualizado',
     });
 

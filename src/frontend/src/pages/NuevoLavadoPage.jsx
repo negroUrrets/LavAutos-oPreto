@@ -8,7 +8,6 @@ import {
   listCategoriasLavado,
   listEstadosLavado,
   listUtileria,
-  updateUtileria,
 } from '../services/lavadoService.js';
 import { getVehiculo } from '../services/vehicleService.js';
 
@@ -66,11 +65,7 @@ export default function NuevoLavadoPage() {
                   .toLowerCase() !== 'entregado',
             ),
           );
-          setSeleccion(
-            listaUtileria
-              .filter((utileria) => Boolean(utileria.estadoUtileria))
-              .map((utileria) => codigo(utileria.codigoUtileria)),
-          );
+          setSeleccion([]);
           setChecking(false);
         });
       })
@@ -85,19 +80,13 @@ export default function NuevoLavadoPage() {
     };
   }, [vehiculoId, navigate]);
 
-  async function toggleUtileria(codigoUtileria) {
-    const activa = seleccion.includes(codigoUtileria);
-    const nuevoEstado = !activa;
-
-    try {
-      await updateUtileria(codigoUtileria, { estadoUtileria: nuevoEstado });
-      setSeleccion((prev) =>
-        nuevoEstado ? [...prev, codigoUtileria] : prev.filter((item) => item !== codigoUtileria),
-      );
-      setWarning('');
-    } catch {
-      setWarning('No se pudo actualizar la utileria.');
-    }
+  function toggleUtileria(codigoUtileria) {
+    setSeleccion((prev) =>
+      prev.includes(codigoUtileria)
+        ? prev.filter((item) => item !== codigoUtileria)
+        : [...prev, codigoUtileria],
+    );
+    setWarning('');
   }
 
   function handleSubmit(event) {
@@ -126,7 +115,7 @@ export default function NuevoLavadoPage() {
         vehi: vehiculoId,
         categoriaLavado: categoria,
         estado,
-        utileria: seleccion[0],
+        utilerias: seleccion,
         detallesLavado: detalles,
         login,
       });
@@ -143,11 +132,7 @@ export default function NuevoLavadoPage() {
     setCategoria('');
     setEstado('');
     setDetalles('');
-    setSeleccion(
-      utilerias
-        .filter((utileria) => Boolean(utileria.estadoUtileria))
-        .map((utileria) => codigo(utileria.codigoUtileria)),
-    );
+    setSeleccion([]);
   }
 
   if (checking) {

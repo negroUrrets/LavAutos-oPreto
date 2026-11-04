@@ -23,8 +23,13 @@ function crearLavado(codigoLavado, codigoEstado) {
     codigoLavado,
     fechaHoraLavado: '2026-09-07T13:05:00Z',
     estado: codigoEstado,
+    detallesLavado: 'Lavado completo',
     datosEstado: ESTADOS.find((estado) => estado.codigoEstado === codigoEstado),
     categoria: { descripcionLavado: 'Completo' },
+    utilerias: [
+      { codigoUtileria: 1, descripcionUtileria: 'Balizas' },
+      { codigoUtileria: 2, descripcionUtileria: 'Matafuegos' },
+    ],
     vehiculo: {
       patenteVehi: `AB-12${codigoLavado}-CD`,
       modelo: { modeloVehi: 'Corsa', marca: { marcaVehi: 'Chevrolet' } },
@@ -195,11 +200,51 @@ describe('LavadosPage', () => {
     expect(within(dialogo).getByText('Corsa')).toBeInTheDocument();
     expect(within(dialogo).getByText('30111222')).toBeInTheDocument();
     expect(within(dialogo).getByText('ana@correo.com')).toBeInTheDocument();
+    const detalles = within(dialogo).getByText('DETALLES');
+    const separador = within(dialogo).getByRole('separator');
+    expect(detalles).toBeInTheDocument();
+    expect(within(dialogo).getByText('Lavado completo')).toBeInTheDocument();
+    expect(detalles.closest('dl').nextElementSibling).toBe(separador);
+    expect(within(dialogo).getByText('UTILERIAS')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Balizas - Matafuegos')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Informacion del Lavado')).toHaveClass('text-green-600');
 
     await user.click(within(dialogo).getByRole('button', { name: 'Aceptar' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+  });
+
+  test('+info muestra Detalles aunque sea nulo', async () => {
+    const user = userEvent.setup();
+    const lavado = crearLavado(1, 1);
+    lavado.detallesLavado = null;
+    lavados = [lavado];
+    renderPage();
+
+    await screen.findByDisplayValue('1');
+    await user.click(screen.getByRole('button', { name: '+ info' }));
+
+    const dialogo = screen.getByRole('dialog');
+    const fila = within(dialogo).getByText('DETALLES').closest('div');
+
+    expect(fila.querySelector('dd').textContent).toBe('');
+  });
+
+  test('+info muestra Utilerias vacia cuando no hay', async () => {
+    const user = userEvent.setup();
+    const lavado = crearLavado(1, 1);
+    lavado.utilerias = [];
+    lavados = [lavado];
+    renderPage();
+
+    await screen.findByDisplayValue('1');
+    await user.click(screen.getByRole('button', { name: '+ info' }));
+
+    const dialogo = screen.getByRole('dialog');
+    const fila = within(dialogo).getByText('UTILERIAS').closest('div');
+
+    expect(fila.querySelector('dd').textContent).toBe('');
   });
 
   test('Lavar mueve el lavado a la seccion Lavando', async () => {

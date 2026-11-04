@@ -7,6 +7,7 @@ const {
   Lavado,
   EstadoLavado,
   Utileria,
+  DetalleUtileria,
 } = require('../models');
 const { createBaseFixtures, removeBaseFixtures } = require('./helpers/fixtures');
 
@@ -60,10 +61,14 @@ describe('modelos Sequelize', () => {
       lavado = await Lavado.create({
         fechaHoraLavado: new Date(),
         estado: ids.estadoLavadoId,
-        utileria: ids.utileriaId,
         vehi: vehiculo.codigoVehi,
         categoriaLavado: ids.categoriaLavadoId,
         login: ids.loginId,
+      });
+
+      await DetalleUtileria.create({
+        codigoLavado: lavado.codigoLavado,
+        codigoUtileria: ids.utileriaId,
       });
 
       const found = await Lavado.findByPk(lavado.codigoLavado, {
@@ -76,13 +81,14 @@ describe('modelos Sequelize', () => {
             ],
           },
           { model: EstadoLavado, as: 'datosEstado' },
-          { model: Utileria, as: 'datosUtileria' },
+          { model: Utileria, as: 'utilerias' },
         ],
       });
 
       expect(found.vehiculo.datosCliente.persona.nombre).toBe('Ana');
       expect(String(found.datosEstado.codigoEstado)).toBe(String(ids.estadoLavadoId));
-      expect(String(found.datosUtileria.codigoUtileria)).toBe(String(ids.utileriaId));
+      expect(found.utilerias).toHaveLength(1);
+      expect(String(found.utilerias[0].codigoUtileria)).toBe(String(ids.utileriaId));
 
       const cliente = await Cliente.findByPk(ids.clienteId, {
         include: [{ model: Persona, as: 'persona' }],
@@ -105,7 +111,7 @@ describe('modelos Sequelize', () => {
 
     expect(targets).not.toContain('Cliente');
     expect(aliases).toEqual(
-      expect.arrayContaining(['vehiculo', 'categoria', 'datosLogin', 'datosEstado', 'datosUtileria']),
+      expect.arrayContaining(['vehiculo', 'categoria', 'datosLogin', 'datosEstado', 'utilerias']),
     );
   });
 });

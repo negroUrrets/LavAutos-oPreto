@@ -9,6 +9,7 @@ const CategoriaLavado = require('./CategoriaLavado');
 const EstadoLavado = require('./EstadoLavado');
 const Utileria = require('./Utileria');
 const Lavado = require('./Lavado');
+const DetalleUtileria = require('./DetalleUtileria');
 const Usuario = require('./Usuario');
 const Login = require('./Login');
 
@@ -39,8 +40,18 @@ Lavado.belongsTo(CategoriaLavado, { foreignKey: 'categoriaLavado', as: 'categori
 EstadoLavado.hasMany(Lavado, { foreignKey: 'estado', as: 'lavados' });
 Lavado.belongsTo(EstadoLavado, { foreignKey: 'estado', as: 'datosEstado' });
 
-Utileria.hasMany(Lavado, { foreignKey: 'utileria', as: 'lavados' });
-Lavado.belongsTo(Utileria, { foreignKey: 'utileria', as: 'datosUtileria' });
+Lavado.belongsToMany(Utileria, {
+  through: DetalleUtileria,
+  foreignKey: 'codigoLavado',
+  otherKey: 'codigoUtileria',
+  as: 'utilerias',
+});
+Utileria.belongsToMany(Lavado, {
+  through: DetalleUtileria,
+  foreignKey: 'codigoUtileria',
+  otherKey: 'codigoLavado',
+  as: 'lavados',
+});
 
 // Usuario y Login
 Usuario.hasMany(Login, { foreignKey: 'usuario', as: 'logins' });
@@ -61,6 +72,7 @@ module.exports = {
   EstadoLavado,
   Utileria,
   Lavado,
+  DetalleUtileria,
   Usuario,
   Login,
 };

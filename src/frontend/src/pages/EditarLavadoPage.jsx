@@ -9,7 +9,6 @@ import {
   listEstadosLavado,
   listUtileria,
   updateLavado,
-  updateUtileria,
 } from '../services/lavadoService.js';
 
 function codigo(valor) {
@@ -63,9 +62,9 @@ export default function EditarLavadoPage() {
             setCategorias(listaCategorias);
             setEstados(listaEstados);
             setSeleccion(
-              listaUtileria
-                .filter((utileria) => Boolean(utileria.estadoUtileria))
-                .map((utileria) => codigo(utileria.codigoUtileria)),
+              (datosLavado.utilerias ?? []).map((utileria) =>
+                codigo(utileria.codigoUtileria),
+              ),
             );
             setCategoria(codigo(datosLavado.categoriaLavado));
             setEstado(codigo(datosLavado.estado));
@@ -89,19 +88,13 @@ export default function EditarLavadoPage() {
     };
   }, [lavadoId, navigate]);
 
-  async function toggleUtileria(codigoUtileria) {
-    const activa = seleccion.includes(codigoUtileria);
-    const nuevoEstado = !activa;
-
-    try {
-      await updateUtileria(codigoUtileria, { estadoUtileria: nuevoEstado });
-      setSeleccion((prev) =>
-        nuevoEstado ? [...prev, codigoUtileria] : prev.filter((item) => item !== codigoUtileria),
-      );
-      setWarning('');
-    } catch {
-      setWarning('No se pudo actualizar la utileria.');
-    }
+  function toggleUtileria(codigoUtileria) {
+    setSeleccion((prev) =>
+      prev.includes(codigoUtileria)
+        ? prev.filter((item) => item !== codigoUtileria)
+        : [...prev, codigoUtileria],
+    );
+    setWarning('');
   }
 
   async function handleRegistrar() {
@@ -109,7 +102,7 @@ export default function EditarLavadoPage() {
       await updateLavado(lavadoId, {
         categoriaLavado: categoria,
         estado,
-        utileria: seleccion[0],
+        utilerias: seleccion,
         detallesLavado: detalles,
       });
       setShowSuccess(true);
